@@ -114,7 +114,6 @@ bucket_name = S3_BUCKET # name of the bucket
 
 my_config = Config(
     region_name = S3_DEFAULT_REGION,
-    signature_version = 'v4',
     retries = {
         'max_attempts': 10,
         'mode': 'standard'
@@ -130,7 +129,8 @@ s3_client = boto3.client(
 )
 
 for file_name in [localMysqlBackup,wp_archive]:
-    s3_client.upload_file(file_name, S3_BUCKET, file_name)
+    finaldest=DATETIME + "/" + os.path.basename(file_name)
+    s3_client.upload_file(file_name, S3_BUCKET, finaldest)
 
 print ("")
 print ("Backup script completed")
