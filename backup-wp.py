@@ -11,7 +11,7 @@
 # Created date: Sept 21, 2021
 # Last modified: Aug 21, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.2
+# Script Revision: 0.3
 #
 ##########################################################
 
@@ -24,6 +24,8 @@ import pipes
 import sys
 import configparser
 import tarfile
+import boto3
+from botocore.config import Config
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
@@ -73,7 +75,7 @@ try:
 except:
     os.mkdir(TODAYBACKUPPATH)
 
-# Starting actual database backup process.
+# Part1 : Database backup.
 print ("")
 print ("Starting Backup of MySQL")
 
@@ -82,11 +84,13 @@ dumpcmd = "mysqldump -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWO
 os.system(dumpcmd)
 gzipcmd = "gzip " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
 os.system(gzipcmd)
+localMysqlBackup=pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql.gz"
 
 print ("")
 print ("Backup of MySQL completed")
 
-# Starting actual Wordpress folder backup process.
+# Part2 : WP Site backup.
+
 print ("")
 print ("Starting backup of Wordpress Site folder")
 #declare filename
@@ -99,6 +103,34 @@ tar.close()
 
 print ("")
 print ("Backup of  Wordpress Site folder completed")
+
+
+# Part 3 : Copy to S3
+
+print ("")
+print ("Starting Copy to AWS S3")
+
+bucket_name = S3_BUCKET # name of the bucket
+
+my_config = Config(
+    region_name = S3_DEFAULT_REGION,
+    signature_version = 'v4',
+    retries = {
+        'max_attempts': 10,
+        'mode': 'standard'
+    }
+)
+
+
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=S3_ACCESS_KEY,
+    aws_secret_access_key=S3_SECRET_ACCESS_KEY, 
+    config=my_config
+)
+
+for file_name in [localMysqlBackup,wp_archive]:
+    s3_client.upload_file(file_name, S3_BUCKET, file_name)
 
 print ("")
 print ("Backup script completed")
