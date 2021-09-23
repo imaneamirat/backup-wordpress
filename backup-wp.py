@@ -9,7 +9,7 @@
 #
 # Written by : Imane AMIRAT
 # Created date: Sept 21, 2021
-# Last modified: Aug 21, 2021 
+# Last modified: Aug 21, 2021
 # Tested with : Python 3.8
 # Script Revision: 0.1
 #
@@ -21,11 +21,12 @@ import os
 import time
 import datetime
 import pipes
-import sys 
+import sys
 import configparser
+import tarfile
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
-# Todo : Add the option -f to read parameters from a specified filename in the command line parameter 
+# Todo : Add the option -f to read parameters from a specified filename in the command line parameter
 
 CONFIG_FILE = '/etc/backup-wp.conf'
 
@@ -51,13 +52,10 @@ config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
 
 WP_PATH = config.get('WP','WP_PATH')
-
 DB_HOST = config.get('DB','DB_HOST')
 DB_NAME = config.get('DB','DB_NAME')
 DB_USERNAME = config.get('DB','DB_USERNAME')
 DB_PASSWORD = config.get('DB','DB_PASSWORD')
-
-
 BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
 
 S3_BUCKET = config.get('BACKUP','S3_BUCKET')
@@ -82,8 +80,19 @@ os.system(dumpcmd)
 gzipcmd = "gzip " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
 os.system(gzipcmd)
 
-# Starting actual Wordpress folder backup process.
+print ("")
+print ("Backup of MySQL completed")
 
+# Starting actual Wordpress folder backup process.
+print ("")
+print ("Starting backup of Wordpress folder")
+#declare filename
+wp_archive= TODAYBACKUPPATH + "/" + "wordpress.tar.gz"
+
+#open file in write mode
+tar = tarfile.open(wp_archive,"w:gz")
+tar.add(WP_PATH)
+tar.close()
 
 print ("")
 print ("Backup script completed")
