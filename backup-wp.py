@@ -11,7 +11,7 @@
 # Created date: Sept 21, 2021
 # Last modified: Aug 21, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.1
+# Script Revision: 0.2
 #
 ##########################################################
 
@@ -74,6 +74,9 @@ except:
     os.mkdir(TODAYBACKUPPATH)
 
 # Starting actual database backup process.
+print ("")
+print ("Starting Backup of MySQL")
+
 dumpcmd = "mysqldump -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWORD + "\' " + DB_NAME + " > " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
 
 os.system(dumpcmd)
@@ -85,14 +88,17 @@ print ("Backup of MySQL completed")
 
 # Starting actual Wordpress folder backup process.
 print ("")
-print ("Starting backup of Wordpress folder")
+print ("Starting backup of Wordpress Site folder")
 #declare filename
-wp_archive= TODAYBACKUPPATH + "/" + "wordpress.tar.gz"
+wp_archive= TODAYBACKUPPATH + "/" + "wordpress.site.tar.gz"
 
 #open file in write mode
 tar = tarfile.open(wp_archive,"w:gz")
 tar.add(WP_PATH)
 tar.close()
+
+print ("")
+print ("Backup of  Wordpress Site folder completed")
 
 print ("")
 print ("Backup script completed")
