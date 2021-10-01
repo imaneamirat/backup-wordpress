@@ -67,7 +67,7 @@ Before each new daily backup  :
 '''
 
 
-def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=True):
+def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=False):
     """connexion au serveur ftp et ouverture de la session
        - adresseftp: adresse du serveur ftp
        - nom: nom de l'utilisateur enregistré ('anonymous' par défaut)
@@ -235,13 +235,14 @@ else:
     print ("")
     print ("Starting Copy to FTP Server")    
     
-    ftp=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
-    ftp.cwd(FTP_PATH)
+    ftpaws=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
+    ftpaws.cwd(FTP_PATH)
 
     for file in [localMysqlBackup,wp_archive]:
-        result=uploadftp(ftp,file)
+        print("Transfering" + file)
+        result=uploadftp(ftpaws,file)
 
-    fermerftp(ftp)
+    fermerftp(ftpaws)
 
     print ("")
     print ("Copy to FTP Server completed")   
