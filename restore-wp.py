@@ -2,9 +2,9 @@
 
 ###########################################################
 #
-# This python script is used to backup Wordpress website and associated mysql database
-# using mysqldump and tar utility.
-# Backups are copied to either :
+# This python script is used to restore Wordpress website and associated mysql database
+# using mysql and tar utility.
+# Backups are downloaded from either :
 # - AWS S3 and encrypted using a private AES-256 key
 # or
 # - FTP server
@@ -12,10 +12,10 @@
 # This scripts needs root privileges
 #
 # Written by : Imane AMIRAT
-# Created date: Sept 21, 2021
-# Last modified: Aug 24, 2021
+# Created date: Sept 30, 2021
+# Last modified: Oct 1, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.5
+# Script Revision: 0.1
 #
 ##########################################################
 
@@ -80,6 +80,18 @@ def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=Fa
     ftp.login(nom, mdpasse)
     ftp.set_pasv(passif)
     return ftp
+
+def downloadftp(ftp, ficftp, repdsk='.', ficdsk=None):
+    """télécharge le fichier ficftp du serv. ftp dans le rép. repdsk du disque
+       - ftp: variable 'ftplib.FTP' sur une session ouverte
+       - ficftp: nom du fichier ftp dans le répertoire courant
+       - repdsk: répertoire du disque dans lequel il faut placer le fichier
+       - ficdsk: si mentionné => c'est le nom qui sera utilisé sur disque
+    """
+    if ficdsk==None:
+        ficdsk=ficftp
+    with open(os.path.join(repdsk, ficdsk), 'wb') as f:
+        ftp.retrbinary('RETR ' + ficftp, f.write)
 
 def uploadftp(ftp, ficdsk, ficftp=None):
     '''
@@ -170,41 +182,15 @@ try:
 except:
     os.mkdir(TODAYBACKUPPATH)
 
-# Part1 : Database backup.
-print ("")
-print ("Starting Backup of MySQL")
 
-dumpcmd = "mysqldump -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWORD + "\' " + DB_NAME + " > " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
+# Part1 : Retrieve backup files
 
-os.system(dumpcmd)
-gzipcmd = "gzip " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
-os.system(gzipcmd)
-localMysqlBackup=pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql.gz"
-
-print ("")
-print ("Backup of MySQL completed")
-
-# Part2 : WP Site backup.
-
-print ("")
-print ("Starting backup of Wordpress Site folder")
-#declare filename
-wp_archive= TODAYBACKUPPATH + "/" + "wordpress.site.tar.gz"
-
-#open file in write mode
-tar = tarfile.open(wp_archive,"w:gz")
-tar.add(WP_PATH)
-tar.close()
-
-print ("")
-print ("Backup of  Wordpress Site folder completed")
-
-
-# Part 3 : Copy to BACKUP_DEST
+MysqlBackupFilename="wordpress.sql.gz"
+WordPressBackupFilename="wordpress.site.tar.gz"
 
 if BACKUP_DEST == 'S3':
     print ("")
-    print ("Starting Copy to AWS S3")
+    print ("Starting Download from AWS S3")
 
     bucket_name = S3_BUCKET # name of the bucket
 
@@ -224,32 +210,58 @@ if BACKUP_DEST == 'S3':
         config=my_config
     )
 
-    for file in [localMysqlBackup,wp_archive]:
-        #file_name=DATETIME + "/" + os.path.basename(file)
-        file_name=os.path.basename(file)
-        s3_client.upload_file(file, S3_BUCKET, file_name)
+    for filename in [MysqlBackupFilename,WordPressBackupFilename]:
+        FileFullPath=pipes.quote(TODAYBACKUPPATH) + "/" + filename
+        with open(FileFullPath, 'wb') as f:
+            s3_client.download_file(S3_BUCKET,filename,f)
 
     print ("")
-    print ("Copy to AWS S3 completed")   
+    print ("Download from AWS S3 completed")   
     
 else:
     print ("")
-    print ("Starting Copy to FTP Server")    
+    print ("Starting Download from FTP Server")    
     
     ftpaws=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
     ftpaws.cwd(FTP_PATH)
 
-    for file in [localMysqlBackup,wp_archive]:
+    for file in [MysqlBackupFilename,WordPressBackupFilename]:
         print("Transfering" + file)
-        result=uploadftp(ftpaws,file)
+        result=downloadftp(ftpaws,file,TODAYBACKUPPATH)
 
     fermerftp(ftpaws)
 
     print ("")
     print ("Copy to FTP Server completed")   
 
+# Part2 : Database Restore.
+print ("")
+print ("Starting Import of MySQL Dump")
+
+importcmd = "zcat " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql.gz | mysql -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWORD + "\' " + DB_NAME
+
+os.system(importcmd)
 
 
 print ("")
-print ("Backup script completed")
-print ("Your backups have also been created locally in '" + TODAYBACKUPPATH + "' directory")
+print ("Dump of MySQL imported")
+
+# Part3 : WP Site Restore.
+
+print ("")
+print ("Starting Restore of Wordpress Site folder")
+#declare filename
+wp_archive= TODAYBACKUPPATH + "/" + "wordpress.site.tar.gz"
+
+#open file in read mode
+tar = tarfile.open(wp_archive,"r:gz")
+tar.extractall(WP_PATH)
+tar.close()
+
+print ("")
+print ("Restore of  Wordpress Site folder completed")
+
+
+print ("")
+print ("Restore script completed")
+
