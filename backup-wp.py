@@ -29,8 +29,9 @@ import sys
 import configparser
 import tarfile
 import boto3
+import ftplib
 from botocore.config import Config
-from ftplib import FTP
+
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
@@ -64,6 +65,43 @@ Before each new daily backup  :
 
 2) copy new backup files in /data/backup/dayJ
 '''
+
+
+def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=True):
+    """connexion au serveur ftp et ouverture de la session
+       - adresseftp: adresse du serveur ftp
+       - nom: nom de l'utilisateur enregistré ('anonymous' par défaut)
+       - mdpasse: mot de passe de l'utilisateur ('anonymous@' par défaut)
+       - passif: active ou désactive le mode passif (True par défaut)
+       retourne la variable 'ftplib.FTP' après connexion et ouverture de session
+    """
+    ftp = ftplib.FTP()
+    ftp.connect(serveur)
+    ftp.login(nom, mdpasse)
+    ftp.set_pasv(passif)
+    return ftp
+
+def uploadftp(ftp, ficdsk, ficftp=None):
+    '''
+    télécharge le fichier ficdsk du disque dans le rép. courant du Serv. ftp
+        - ftp: variable 'ftplib.FTP' sur une session ouverte
+        - ficdsk: nom du fichier disque avec son chemin
+        - ficftp: si mentionné => c'est le nom qui sera utilisé sur ftp
+    '''
+    repdsk, ficdsk2 = os.path.split(ficdsk)
+    if ficftp==None:
+        ficftp = ficdsk2
+    with open(ficdsk, "rb") as f:
+        ftp.storbinary("STOR " + ficftp, f)
+
+def fermerftp(ftp):
+    """ferme la connexion ftp
+       - ftp: variable 'ftplib.FTP' sur une connexion ouverte
+    """
+    try:
+        ftp.quit()
+    except:
+        ftp.close() 
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
@@ -196,15 +234,14 @@ if BACKUP_DEST == 'S3':
 else:
     print ("")
     print ("Starting Copy to FTP Server")    
-    ftp = FTP(FTP_SERVER)
-    ftp.login(user=FTP_USER,passwd=FTP_PASSWD)
+    
+    ftp=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
     ftp.cwd(FTP_PATH)
 
     for file in [localMysqlBackup,wp_archive]:
-        file_name = os.path.basename(file)
-        file_descriptor = open(file,'rb')
-        CMD = "STOR " + file_name
-        ftp.storbinary(CMD, file_descriptor)
+        result=uploadftp(ftp,file)
+
+    fermerftp(ftp)
 
     print ("")
     print ("Copy to FTP Server completed")   
