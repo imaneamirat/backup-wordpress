@@ -31,15 +31,14 @@ Before each new daily backup  :
 2) copy new backup files in /data/backup/dayJ
 
 
-Example of config file content :
+Example of config file content : /etc/backup-wp.conf
 
 [WP]
 WP_PATH=/var/www/html
 [DB]
 DB_HOST=localhost
 DB_NAME=wordpress
-DB_USERNAME=wpu
-DB_PASSWORD=Imane$2021!
+
 [BACKUP]
 LOCALBKPATH=/data/backup
 BACKUP_DEST=S3
@@ -51,11 +50,29 @@ S3_DEFAULT_REGION=eu-west-3
 Or
 [BACKUP]
 LOCALBKPATH=/data/backup
+RETENTION=7
 BACKUP_DEST=FTP
 FTP_SERVER=ftp.imaneaic.com
 FTP_USER=backupwp
 FTP_PASSWD=1edd!ai3$
 FTP_PATH=backup-wp
+
+
+Create the file .my.cnf in your HOME directory :
+Content of .my.cnf :
+
+[client]
+host=localhost
+database=wordpress
+user=wpu
+password=Imane$2021!
+[mysqldump]
+host=localhost
+user=wpu
+password=Imane$2021!
+
+
+
 '''
 
 

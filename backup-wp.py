@@ -22,6 +22,7 @@
 # Import required python libraries
 
 import os
+import errno
 import time
 import datetime
 import pipes
@@ -81,17 +82,17 @@ def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=Fa
     ftp.set_pasv(passif)
     return ftp
 
-def uploadftp(ftp, ficdsk, ficftp=None):
+def uploadftp(ftp, ficdsk, ftpPath):
     '''
     télécharge le fichier ficdsk du disque dans le rép. courant du Serv. ftp
         - ftp: variable 'ftplib.FTP' sur une session ouverte
-        - ficdsk: nom du fichier disque avec son chemin
-        - ficftp: si mentionné => c'est le nom qui sera utilisé sur ftp
+        - ficdsk: nom du fichier disque avec son chemin en local
+        - ficPath: chemin sur le FTP distant
     '''
     repdsk, ficdsk2 = os.path.split(ficdsk)
-    if ficftp==None:
-        ficftp = ficdsk2
+    ficftp = ficdsk2
     with open(ficdsk, "rb") as f:
+        ftp.cwd(ftpPath)
         ftp.storbinary("STOR " + ficftp, f)
 
 def fermerftp(ftp):
@@ -105,45 +106,16 @@ def fermerftp(ftp):
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
-'''
-Example of config file content :
-
-[WP]
-WP_PATH=/var/www/html
-[DB]
-DB_HOST=localhost
-DB_NAME=wordpress
-DB_USERNAME=wpu
-DB_PASSWORD=Imane$2021!
-[BACKUP]
-LOCALBKPATH=/data/backup
-BACKUP_DEST=S3
-S3_BUCKET=ImaneAIC-WP
-S3_ACCESS_KEY=XXXXXXXXXXX
-S3_SECRET_ACCESS_KEY=YYYYYYYY
-S3_DEFAULT_REGION=eu-west-3
-
-Or
-[BACKUP]
-LOCALBKPATH=/data/backup
-BACKUP_DEST=FTP
-FTP_SERVER=ftp.imaneaic.com
-FTP_USER=backupwp
-FTP_PASSWD=1edd!ai3$
-FTP_PATH=backup-wp
-'''
-
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
 
 WP_PATH = config.get('WP','WP_PATH')
 DB_HOST = config.get('DB','DB_HOST')
 DB_NAME = config.get('DB','DB_NAME')
-DB_USERNAME = config.get('DB','DB_USERNAME')
-DB_PASSWORD = config.get('DB','DB_PASSWORD')
 
+BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
-BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
+BACKUP_ROOT_PATH = config.get('BACKUP','LOCALBKPATH')
 
 
 if BACKUP_DEST == 'S3':
@@ -155,31 +127,40 @@ elif BACKUP_DEST == 'FTP':
     FTP_SERVER = config.get('BACKUP','FTP_SERVER')
     FTP_USER = config.get('BACKUP','FTP_USER')
     FTP_PASSWD = config.get('BACKUP','FTP_PASSWD')
-    FTP_PATH = config.get('BACKUP','FTP_PATH')
+    FTP_ROOT_PATH = config.get('BACKUP','FTP_PATH')
 else:
     print("Bad value in " + CONFIG_FILE + ". Value of BACKUP_DEST should be S3 or FTP only. Exiting")
     exit(1)
 
-# Getting current DateTime to create the separate backup folder like "20210921".
-DATETIME = time.strftime('%Y%m%d')
-TODAYBACKUPPATH = BACKUP_PATH + '/' + DATETIME
 
-# Checking if backup folder already exists or not. If not exists will create it.
-try:
-    os.stat(TODAYBACKUPPATH)
-except:
-    os.mkdir(TODAYBACKUPPATH)
+# Checking if local backup folders already exists or not. If not, we will create them.
+
+for index in range(BACKUP_RETENTION):
+    if index==0:
+        BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ"
+    else:
+        BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
+    try:
+        os.stat(BACKUP_PATH)
+    except:
+        try:
+            os.makedirs(BACKUP_PATH)
+        except OSError as exc: 
+            if exc.errno == errno.EEXIST and os.path.isdir(BACKUP_PATH):
+                pass
+    
+
 
 # Part1 : Database backup.
 print ("")
 print ("Starting Backup of MySQL")
 
-dumpcmd = "mysqldump -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWORD + "\' " + DB_NAME + " > " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
+dumpcmd = "mysqldump -h " + DB_HOST + " " + DB_NAME + " > " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
 
 os.system(dumpcmd)
-gzipcmd = "gzip " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql"
+gzipcmd = "gzip " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
 os.system(gzipcmd)
-localMysqlBackup=pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql.gz"
+localMysqlBackup=pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql.gz"
 
 print ("")
 print ("Backup of MySQL completed")
@@ -189,7 +170,7 @@ print ("Backup of MySQL completed")
 print ("")
 print ("Starting backup of Wordpress Site folder")
 #declare filename
-wp_archive= TODAYBACKUPPATH + "/" + "wordpress.site.tar.gz"
+wp_archive= BACKUP_PATH + "/" + "wordpress.site.tar.gz"
 
 #open file in write mode
 tar = tarfile.open(wp_archive,"w:gz")
@@ -225,7 +206,6 @@ if BACKUP_DEST == 'S3':
     )
 
     for file in [localMysqlBackup,wp_archive]:
-        #file_name=DATETIME + "/" + os.path.basename(file)
         file_name=os.path.basename(file)
         s3_client.upload_file(file, S3_BUCKET, file_name)
 
@@ -236,14 +216,45 @@ else:
     print ("")
     print ("Starting Copy to FTP Server")    
     
-    ftpaws=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
-    ftpaws.cwd(FTP_PATH)
+    ftpserver=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
+
+    for index in range(BACKUP_RETENTION-1):
+        if index==0:
+            FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
+        else:
+            FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(index)
+        try:
+            ftpserver.mkd(FTP_PATH)
+        except:
+            pass
+
+    # Delete DAYJ-RETENTION-1 folder
+    FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(BACKUP_RETENTION-1)
+    try:
+        ftpserver.rmd(FTP_PATH)
+    except:
+        pass
+
+
+    # Move content of DAYJ-N to DAYJ-(N+1)
+    for index in range(BACKUP_RETENTION-1,0,-1):
+        if index==0:
+            FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ"
+            FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-1"
+        else:
+            FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ-" + str(index)
+            FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-" + str(index+1)
+        ftpserver.rename(FTP_PATH_FROM,FTP_PATH_TO)
+    
+    # Create DAYJ folder
+    FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
+    ftpserver.mkd(FTP_PATH)   
 
     for file in [localMysqlBackup,wp_archive]:
         print("Transfering" + file)
-        result=uploadftp(ftpaws,file)
+        result=uploadftp(ftpserver,file,FTP_PATH)
 
-    fermerftp(ftpaws)
+    fermerftp(ftpserver)
 
     print ("")
     print ("Copy to FTP Server completed")   
@@ -252,4 +263,4 @@ else:
 
 print ("")
 print ("Backup script completed")
-print ("Your backups have also been created locally in '" + TODAYBACKUPPATH + "' directory")
+print ("Your backups have also been created locally in '" + BACKUP_PATH + "' directory")
