@@ -135,7 +135,7 @@ else:
 
 # Checking if local backup folders already exists or not. If not, we will create them.
 
-for index in range(BACKUP_RETENTION):
+for index in range(int(BACKUP_RETENTION)):
     if index==0:
         BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ"
     else:
@@ -218,7 +218,7 @@ else:
     
     ftpserver=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
 
-    for index in range(BACKUP_RETENTION-1):
+    for index in range(int(BACKUP_RETENTION-1)):
         if index==0:
             FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
         else:
@@ -237,7 +237,7 @@ else:
 
 
     # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(BACKUP_RETENTION-1,0,-1):
+    for index in range(int(BACKUP_RETENTION-1,0,-1)):
         if index==0:
             FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ"
             FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-1"
