@@ -149,28 +149,28 @@ for index in range(int(BACKUP_RETENTION)):
             if exc.errno == errno.EEXIST and os.path.isdir(BACKUP_PATH):
                 pass
 
-    # Backup Rotation
-    # Delete DAYJ-RETENTION-1 folder
-    BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
-    try:
-        os.rmdir(FTP_PATH)
-    except:
-        pass
+# Backup Rotation
+# Delete DAYJ-RETENTION-1 folder
+BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
+try:
+    os.rmdir(FTP_PATH)
+except:
+    pass
 
 
-    # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(int(BACKUP_RETENTION)-1,0,-1):
-        if index==0:
-            BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ"
-            BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-1"
-        else:
-            BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
-            BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
-        os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
+# Move content of DAYJ-N to DAYJ-(N+1)
+for index in range(int(BACKUP_RETENTION)-1,0,-1):
+    if index==0:
+        BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ"
+        BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-1"
+    else:
+        BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
+        BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
+    os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
     
-    # Create DAYJ folder
-    BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ"
-    os.mkdir(BACKUP_PATH)     
+# Create DAYJ folder
+BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ"
+os.mkdir(BACKUP_PATH)     
 
 
 # Part1 : Database backup.
