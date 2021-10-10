@@ -218,7 +218,7 @@ else:
     
     ftpserver=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
 
-    for index in range(int(BACKUP_RETENTION-1)):
+    for index in range(int(BACKUP_RETENTION)-1):
         if index==0:
             FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
         else:
@@ -229,7 +229,7 @@ else:
             pass
 
     # Delete DAYJ-RETENTION-1 folder
-    FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(BACKUP_RETENTION-1)
+    FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
     try:
         ftpserver.rmd(FTP_PATH)
     except:
@@ -237,7 +237,7 @@ else:
 
 
     # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(int(BACKUP_RETENTION-1,0,-1)):
+    for index in range(int(BACKUP_RETENTION)-1,0,-1):
         if index==0:
             FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ"
             FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-1"
