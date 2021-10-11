@@ -63,7 +63,6 @@ Content of .my.cnf :
 
 [client]
 host=localhost
-database=wordpress
 user=wpu
 password=Imane$2021!
 [mysqldump]

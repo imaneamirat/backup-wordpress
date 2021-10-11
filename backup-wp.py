@@ -12,10 +12,10 @@
 # This scripts needs root privileges
 #
 # Written by : Imane AMIRAT
-# Created date: Sept 21, 2021
+# Created date: Oct 11, 2021
 # Last modified: Aug 24, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.5
+# Script Revision: 0.6
 #
 ##########################################################
 
@@ -49,26 +49,26 @@ Create the following folders :
 /data/backup/dayJ-4
 /data/backup/dayJ-5
 /data/backup/dayJ-6
-/data/backup/dayJ-7
+
 
 Before each new daily backup  :
 
 1) Rotation :
 
-/data/backup/day-J-7 rm files
-/data/backup/day-J-6 mv to /data/backup/dayJ-7
-/data/backup/day-J-5 mv to /data/backup/dayJ-6
-/data/backup/day-J-4 mv to /data/backup/dayJ-5
-/data/backup/day-J-3 mv to /data/backup/dayJ-4
-/data/backup/day-J-2 mv to /data/backup/dayJ-3
-/data/backup/day-J-1 mv to /data/backup/dayJ-2
-/data/backup/day-J mv to /data/backup/dayJ-1
+rmdir /data/backup/day-J-6 
+mv /data/backup/day-J-5 to /data/backup/dayJ-6
+mv /data/backup/day-J-4 to /data/backup/dayJ-5
+mv /data/backup/day-J-3 to /data/backup/dayJ-4
+mv /data/backup/day-J-2 to /data/backup/dayJ-3
+mv /data/backup/day-J-1 to /data/backup/dayJ-2
+mv /data/backup/day-J to /data/backup/dayJ-1
+mkdir /data/backup/dayJ
 
 2) copy new backup files in /data/backup/dayJ
 '''
 
 
-def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=False):
+def connexionftp(serveur="172.16.30.32" , nom='ftp1', mdpasse='root', passif=False):
     """connexion au serveur ftp et ouverture de la session
        - adresseftp: adresse du serveur ftp
        - nom: nom de l'utilisateur enregistré ('anonymous' par défaut)
@@ -82,17 +82,16 @@ def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=Fa
     ftp.set_pasv(passif)
     return ftp
 
-def uploadftp(ftp, ficdsk, ftpPath):
+def uploadftp(ftp, ficdsk,ftpPath):
     '''
     télécharge le fichier ficdsk du disque dans le rép. courant du Serv. ftp
         - ftp: variable 'ftplib.FTP' sur une session ouverte
         - ficdsk: nom du fichier disque avec son chemin en local
-        - ficPath: chemin sur le FTP distant
+        - ficPath: chemin relatif au FTP_ROOT_PATH sur le FTP distant
     '''
     repdsk, ficdsk2 = os.path.split(ficdsk)
-    ficftp = ficdsk2
+    ficftp = ftpPath + "/" + ficdsk2
     with open(ficdsk, "rb") as f:
-        ftp.cwd(ftpPath)
         ftp.storbinary("STOR " + ficftp, f)
 
 def fermerftp(ftp):
@@ -153,19 +152,22 @@ for index in range(int(BACKUP_RETENTION)):
 # Delete DAYJ-RETENTION-1 folder
 BACKUP_PATH=BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
 try:
-    os.rmdir(FTP_PATH)
+    os.rmdir(BACKUP_PATH)
 except:
     pass
 
 
 # Move content of DAYJ-N to DAYJ-(N+1)
-for index in range(int(BACKUP_RETENTION)-1,0,-1):
+for index in range(int(BACKUP_RETENTION)-2,-1,-1):
     if index==0:
         BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ"
         BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-1"
     else:
         BACKUP_PATH_FROM=BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
         BACKUP_PATH_TO=BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
+    print("Index = " + str(index))
+    print("Rename from " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO)
+
     os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
     
 # Create DAYJ folder
@@ -239,12 +241,15 @@ else:
     print ("Starting Copy to FTP Server")    
     
     ftpserver=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
+    ftpserver.cwd(FTP_ROOT_PATH)
 
-    for index in range(int(BACKUP_RETENTION)-1):
+    for index in range(int(BACKUP_RETENTION)):
         if index==0:
-            FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
+            FTP_PATH="DAYJ"
         else:
-            FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(index)
+            FTP_PATH="DAYJ-" + str(index)
+        print("Create folder " + FTP_PATH)
+        
         try:
             ftpserver.mkd(FTP_PATH)
         except:
@@ -252,7 +257,7 @@ else:
 
     # Backup Rotation
     # Delete DAYJ-RETENTION-1 folder
-    FTP_PATH=FTP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
+    FTP_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
     try:
         ftpserver.rmd(FTP_PATH)
     except:
@@ -260,17 +265,17 @@ else:
 
 
     # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(int(BACKUP_RETENTION)-1,0,-1):
+    for index in range(int(BACKUP_RETENTION)-2,-1,-1):
         if index==0:
-            FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ"
-            FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-1"
+            FTP_PATH_FROM="DAYJ"
+            FTP_PATH_TO="DAYJ-1"
         else:
-            FTP_PATH_FROM=FTP_ROOT_PATH + "/DAYJ-" + str(index)
-            FTP_PATH_TO=FTP_ROOT_PATH + "/DAYJ-" + str(index+1)
+            FTP_PATH_FROM="DAYJ-" + str(index)
+            FTP_PATH_TO="DAYJ-" + str(index+1)
         ftpserver.rename(FTP_PATH_FROM,FTP_PATH_TO)
     
     # Create DAYJ folder
-    FTP_PATH=FTP_ROOT_PATH + "/DAYJ"
+    FTP_PATH="DAYJ"
     ftpserver.mkd(FTP_PATH)   
 
     for file in [localMysqlBackup,wp_archive]:
