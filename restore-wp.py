@@ -67,48 +67,47 @@ Before each new daily backup  :
 '''
 
 
-def connexionftp(serveur="15.236.203.78" , nom='ftp1', mdpasse='root', passif=False):
-    """connexion au serveur ftp et ouverture de la session
-       - adresseftp: adresse du serveur ftp
-       - nom: nom de l'utilisateur enregistré ('anonymous' par défaut)
-       - mdpasse: mot de passe de l'utilisateur ('anonymous@' par défaut)
-       - passif: active ou désactive le mode passif (True par défaut)
-       retourne la variable 'ftplib.FTP' après connexion et ouverture de session
+def connectftp(ftpserver = "172.16.30.32" , username = 'anonymous', password = 'anonymous@', passive = False):
+    """connect to ftp server and open a session
+       - ftpserver: IP address of the ftp server
+       - username: login of the ftp user ('anonymous' by défaut)
+       - password: password of the ftp user ('anonymous@' by défaut)
+       - passive: activate or disable ftp passive mode (False par défaut)
+       return the object 'ftplib.FTP' after connection and opening of a session
     """
     ftp = ftplib.FTP()
-    ftp.connect(serveur)
-    ftp.login(nom, mdpasse)
-    ftp.set_pasv(passif)
+    ftp.connect(ftpserver)
+    ftp.login(username, password)
+    ftp.set_pasv(passive)
     return ftp
 
 def downloadftp(ftp, ficftp, repdsk='.', ficdsk=None):
-    """télécharge le fichier ficftp du serv. ftp dans le rép. repdsk du disque
-       - ftp: variable 'ftplib.FTP' sur une session ouverte
-       - ficftp: nom du fichier ftp dans le répertoire courant
-       - repdsk: répertoire du disque dans lequel il faut placer le fichier
-       - ficdsk: si mentionné => c'est le nom qui sera utilisé sur disque
+    """Download the file ficftp from ftpserver and put it in the local folder repdsk
+       - ftp: object 'ftplib.FTP' from an open session
+       - ficftp: name of the file to download
+       - repdsk: local folder where you want to store the file
+       - ficdsk: optional, if you want to rename the file locally 
     """
     if ficdsk==None:
         ficdsk=ficftp
     with open(os.path.join(repdsk, ficdsk), 'wb') as f:
         ftp.retrbinary('RETR ' + ficftp, f.write)
 
-def uploadftp(ftp, ficdsk, ficftp=None):
+def uploadftp(ftp, ficdsk,ftpPath):
     '''
-    télécharge le fichier ficdsk du disque dans le rép. courant du Serv. ftp
-        - ftp: variable 'ftplib.FTP' sur une session ouverte
-        - ficdsk: nom du fichier disque avec son chemin
-        - ficftp: si mentionné => c'est le nom qui sera utilisé sur ftp
+    Upload the file ficdsk from local folder to the current ftp folder
+        - ftp: object 'ftplib.FTP' on an open session
+        - ficdsk: local name of the file to upload
+        - ficPath: FTP path where to store the file
     '''
     repdsk, ficdsk2 = os.path.split(ficdsk)
-    if ficftp==None:
-        ficftp = ficdsk2
+    ficftp = ftpPath + "/" + ficdsk2
     with open(ficdsk, "rb") as f:
         ftp.storbinary("STOR " + ficftp, f)
 
-def fermerftp(ftp):
-    """ferme la connexion ftp
-       - ftp: variable 'ftplib.FTP' sur une connexion ouverte
+def closeftp(ftp):
+    """Close FTP connection
+       - ftp: variable 'ftplib.FTP' on open connection
     """
     try:
         ftp.quit()
@@ -117,42 +116,12 @@ def fermerftp(ftp):
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
-'''
-Example of config file content :
-
-[WP]
-WP_PATH=/var/www/html
-[DB]
-DB_HOST=localhost
-DB_NAME=wordpress
-DB_USERNAME=wpu
-DB_PASSWORD=Imane$2021!
-[BACKUP]
-LOCALBKPATH=/data/backup
-BACKUP_DEST=S3
-S3_BUCKET=ImaneAIC-WP
-S3_ACCESS_KEY=XXXXXXXXXXX
-S3_SECRET_ACCESS_KEY=YYYYYYYY
-S3_DEFAULT_REGION=eu-west-3
-
-Or
-[BACKUP]
-LOCALBKPATH=/data/backup
-BACKUP_DEST=FTP
-FTP_SERVER=ftp.imaneaic.com
-FTP_USER=backupwp
-FTP_PASSWD=1edd!ai3$
-FTP_PATH=backup-wp
-'''
-
 config = configparser.ConfigParser()
 config.read(CONFIG_FILE)
 
 WP_PATH = config.get('WP','WP_PATH')
 DB_HOST = config.get('DB','DB_HOST')
 DB_NAME = config.get('DB','DB_NAME')
-DB_USERNAME = config.get('DB','DB_USERNAME')
-DB_PASSWORD = config.get('DB','DB_PASSWORD')
 
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
 BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
@@ -174,13 +143,13 @@ else:
 
 # Getting current DateTime to create the separate backup folder like "20210921".
 DATETIME = time.strftime('%Y%m%d')
-TODAYBACKUPPATH = BACKUP_PATH + '/' + DATETIME
+TODAYRESTOREPATH = BACKUP_PATH + '/' + DATETIME
 
 # Checking if backup folder already exists or not. If not exists will create it.
 try:
-    os.stat(TODAYBACKUPPATH)
+    os.stat(TODAYRESTOREPATH)
 except:
-    os.mkdir(TODAYBACKUPPATH)
+    os.mkdir(TODAYRESTOREPATH)
 
 
 # Part1 : Retrieve backup files
@@ -211,7 +180,7 @@ if BACKUP_DEST == 'S3':
     )
 
     for filename in [MysqlBackupFilename,WordPressBackupFilename]:
-        FileFullPath=pipes.quote(TODAYBACKUPPATH) + "/" + filename
+        FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename
         with open(FileFullPath, 'wb') as f:
             s3_client.download_file(S3_BUCKET,filename,f)
 
@@ -222,14 +191,14 @@ else:
     print ("")
     print ("Starting Download from FTP Server")    
     
-    ftpaws=connexionftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
+    ftpaws=connectftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
     ftpaws.cwd(FTP_PATH)
 
     for file in [MysqlBackupFilename,WordPressBackupFilename]:
         print("Transfering" + file)
-        result=downloadftp(ftpaws,file,TODAYBACKUPPATH)
+        result=downloadftp(ftpaws,file,TODAYRESTOREPATH)
 
-    fermerftp(ftpaws)
+    closeftp(ftpaws)
 
     print ("")
     print ("Copy to FTP Server completed")   
@@ -238,7 +207,7 @@ else:
 print ("")
 print ("Starting Import of MySQL Dump")
 
-importcmd = "zcat " + pipes.quote(TODAYBACKUPPATH) + "/" + DB_NAME + ".sql.gz | mysql -h " + DB_HOST + " -u " + DB_USERNAME + " -p\'" + DB_PASSWORD + "\' " + DB_NAME
+importcmd = "zcat " + pipes.quote(TODAYRESTOREPATH) + "/" + DB_NAME + ".sql.gz | mysql -h " + DB_HOST + DB_NAME
 
 os.system(importcmd)
 
@@ -251,7 +220,7 @@ print ("Dump of MySQL imported")
 print ("")
 print ("Starting Restore of Wordpress Site folder")
 #declare filename
-wp_archive= TODAYBACKUPPATH + "/" + "wordpress.site.tar.gz"
+wp_archive= TODAYRESTOREPATH + "/" + "wordpress.site.tar.gz"
 
 #open file in read mode
 tar = tarfile.open(wp_archive,"r:gz")

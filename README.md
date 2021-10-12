@@ -1,9 +1,17 @@
+This script backups WordPress data to either FTP server or AWS S3 depending on the configuration parameters
+It will make backup of wordpress MySQL database and wordpress Apache folder  
+Backup process follow a Backup Folder Rotation Strategy using RETENTION parameter
 By Default, this script will read configuration from file /etc/backup-wp.conf
 Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-Todo : Backup Folder Rotation Strategy
 
-Backup folders :
+Verbose mode :
+Set VERBOSE=0 to disable logs display
+Set VERBOSE=1 to have minimal logs display
+Set VERBOSE=2 to have full logs display
 
+Example for RETENTION = 7
+
+Init :
 Create the following folders :
 
 /data/backup/dayJ
@@ -13,20 +21,19 @@ Create the following folders :
 /data/backup/dayJ-4
 /data/backup/dayJ-5
 /data/backup/dayJ-6
-/data/backup/dayJ-7
 
 Before each new daily backup  :
 
 1) Rotation :
 
-/data/backup/day-J-7 rm files
-/data/backup/day-J-6 mv to /data/backup/dayJ-7
-/data/backup/day-J-5 mv to /data/backup/dayJ-6
-/data/backup/day-J-4 mv to /data/backup/dayJ-5
-/data/backup/day-J-3 mv to /data/backup/dayJ-4
-/data/backup/day-J-2 mv to /data/backup/dayJ-3
-/data/backup/day-J-1 mv to /data/backup/dayJ-2
-/data/backup/day-J mv to /data/backup/dayJ-1
+rmdir /data/backup/day-J-6 
+mv /data/backup/day-J-5 to /data/backup/dayJ-6
+mv /data/backup/day-J-4 to /data/backup/dayJ-5
+mv /data/backup/day-J-3 to /data/backup/dayJ-4
+mv /data/backup/day-J-2 to /data/backup/dayJ-3
+mv /data/backup/day-J-1 to /data/backup/dayJ-2
+mv /data/backup/day-J to /data/backup/dayJ-1
+mkdir /data/backup/dayJ
 
 2) copy new backup files in /data/backup/dayJ
 
@@ -50,7 +57,7 @@ S3_DEFAULT_REGION=eu-west-3
 Or
 [BACKUP]
 LOCALBKPATH=/data/backup
-RETENTION=7
+BACKUP_RETENTION=7
 BACKUP_DEST=FTP
 FTP_SERVER=ftp.imaneaic.com
 FTP_USER=backupwp
@@ -71,8 +78,6 @@ user=wpu
 password=Imane$2021!
 
 
-
-'''
 
 
 
