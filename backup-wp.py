@@ -13,9 +13,9 @@
 #
 # Written by : Imane AMIRAT
 # Created date: Jul 24, 2021
-# Last modified: Oct 12, 2021
+# Last modified: Oct 13, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.7
+# Script Revision: 0.8
 #
 ##########################################################
 
@@ -69,6 +69,31 @@ mkdir /data/backup/dayJ
 '''
 
 VERBOSE = 2
+
+def moveFolderS3(s3,bucket,pathFrom, pathTo):   
+    response = s3.list_objects(Bucket=bucket,Prefix=pathFrom + "/")
+    for content in response.get('Contents', []):
+        old_key = content.get('Key')
+        filename = old_key.split("/")[-1]
+        new_key = pathTo + "/" + filename
+        if VERBOSE == 2:
+            print("Copy " + old_key + " to " + new_key + " in Bucket " + bucket)
+        s3.copy_object(Bucket=bucket,CopySource="/" + bucket + "/" + old_key,Key=new_key) 
+        s3.delete_object(Bucket=bucket,Key=old_key) 
+
+def deleteFolderS3(s3,bucket,prefix):
+    response = s3.list_objects(Bucket=bucket,Prefix=prefix)
+    for content in response.get('Contents', []):
+        key=content.get('Key')
+        if VERBOSE == 2:
+            print("Delete file " + key + " in Bucket " + bucket)
+        s3.delete_object(Bucket=bucket,Key=key) 
+
+def listObjectFolderS3(s3,bucket,prefix):
+    response = s3.list_objects(Bucket=bucket,Prefix=prefix)
+    for content in response.get('Contents', []):
+        key=content.get('Key')
+        print("key = " + key)
 
 def connectftp(ftpserver = "172.16.30.32" , username = 'anonymous', password = 'anonymous@', passive = False):
     """connect to ftp server and open a session
@@ -260,9 +285,40 @@ if BACKUP_DEST == 'S3':
         config = my_config
     )
 
+    # Rotation of backup "folders"
+    if VERBOSE == 2:
+        print("")
+        print ("S3 folders rotation")  
+    # Delete DAYJ-RETENTION-1 folder
+    S3_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
+    if VERBOSE == 2:
+        print("")
+        print("First delete all files in " + S3_PATH    )
+    deleteFolderS3(s3_client,S3_BUCKET,S3_PATH)
+
+    if VERBOSE == 2:
+        print("")
+
+    # Move content of DAYJ-N to DAYJ-(N+1)
+    for index in range(int(BACKUP_RETENTION)-2,-1,-1):
+        if index == 0:
+            S3_PATH_FROM = "DAYJ"
+            S3_PATH_TO = "DAYJ-1"
+        else:
+            S3_PATH_FROM = "DAYJ-" + str(index)
+            S3_PATH_TO = "DAYJ-" + str(index+1)
+        if VERBOSE == 2:
+            print("Move files from " + S3_PATH_FROM + " to " + S3_PATH_TO) 
+#        listObjectFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO)
+        moveFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO)
+    
+    # Finaly copy new backup files to DAYJ folder
     for file in [localMysqlBackup,wp_archive]:
         file_name = os.path.basename(file)
-        s3_client.upload_file(file, S3_BUCKET, file_name)
+        new_name = "DAYJ/" + file_name
+        if VERBOSE == 2:
+            print("Transfering file " + file_name + " to " + new_name) 
+        s3_client.upload_file(file, S3_BUCKET, new_name)
 
     if VERBOSE >= 1:
         print ("")
