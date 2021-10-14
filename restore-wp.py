@@ -30,89 +30,14 @@ import configparser
 import tarfile
 import boto3
 import ftplib
+import tools
 from botocore.config import Config
 
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-# Todo : Backup Folder Rotation Strategy
-'''
-Backup folders :
 
-Create the following folders :
-
-/data/backup/dayJ
-/data/backup/dayJ-1
-/data/backup/dayJ-2
-/data/backup/dayJ-3
-/data/backup/dayJ-4
-/data/backup/dayJ-5
-/data/backup/dayJ-6
-/data/backup/dayJ-7
-
-Before each new daily backup  :
-
-1) Rotation :
-
-/data/backup/day-J-7 rm files
-/data/backup/day-J-6 mv to /data/backup/dayJ-7
-/data/backup/day-J-5 mv to /data/backup/dayJ-6
-/data/backup/day-J-4 mv to /data/backup/dayJ-5
-/data/backup/day-J-3 mv to /data/backup/dayJ-4
-/data/backup/day-J-2 mv to /data/backup/dayJ-3
-/data/backup/day-J-1 mv to /data/backup/dayJ-2
-/data/backup/day-J mv to /data/backup/dayJ-1
-
-2) copy new backup files in /data/backup/dayJ
-'''
-
-
-def connectftp(ftpserver = "172.16.30.32" , username = 'anonymous', password = 'anonymous@', passive = False):
-    """connect to ftp server and open a session
-       - ftpserver: IP address of the ftp server
-       - username: login of the ftp user ('anonymous' by défaut)
-       - password: password of the ftp user ('anonymous@' by défaut)
-       - passive: activate or disable ftp passive mode (False par défaut)
-       return the object 'ftplib.FTP' after connection and opening of a session
-    """
-    ftp = ftplib.FTP()
-    ftp.connect(ftpserver)
-    ftp.login(username, password)
-    ftp.set_pasv(passive)
-    return ftp
-
-def downloadftp(ftp, ficftp, repdsk='.', ficdsk=None):
-    """Download the file ficftp from ftpserver and put it in the local folder repdsk
-       - ftp: object 'ftplib.FTP' from an open session
-       - ficftp: name of the file to download
-       - repdsk: local folder where you want to store the file
-       - ficdsk: optional, if you want to rename the file locally 
-    """
-    if ficdsk==None:
-        ficdsk=ficftp
-    with open(os.path.join(repdsk, ficdsk), 'wb') as f:
-        ftp.retrbinary('RETR ' + ficftp, f.write)
-
-def uploadftp(ftp, ficdsk,ftpPath):
-    '''
-    Upload the file ficdsk from local folder to the current ftp folder
-        - ftp: object 'ftplib.FTP' on an open session
-        - ficdsk: local name of the file to upload
-        - ficPath: FTP path where to store the file
-    '''
-    repdsk, ficdsk2 = os.path.split(ficdsk)
-    ficftp = ftpPath + "/" + ficdsk2
-    with open(ficdsk, "rb") as f:
-        ftp.storbinary("STOR " + ficftp, f)
-
-def closeftp(ftp):
-    """Close FTP connection
-       - ftp: variable 'ftplib.FTP' on open connection
-    """
-    try:
-        ftp.quit()
-    except:
-        ftp.close() 
+VERBOSE = 2
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
@@ -191,14 +116,14 @@ else:
     print ("")
     print ("Starting Download from FTP Server")    
     
-    ftpaws=connectftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
-    ftpaws.cwd(FTP_PATH)
+    ftpserver=tools.connectftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
+    ftpserver.cwd(FTP_PATH)
 
     for file in [MysqlBackupFilename,WordPressBackupFilename]:
         print("Transfering" + file)
-        result=downloadftp(ftpaws,file,TODAYRESTOREPATH)
+        result=tools.downloadftp(ftpserver,file,TODAYRESTOREPATH)
 
-    closeftp(ftpaws)
+    tools.closeftp(ftpserver)
 
     print ("")
     print ("Copy to FTP Server completed")   
