@@ -90,7 +90,7 @@ def deleteFolderS3(s3,bucket,prefix):
         s3.delete_object(Bucket=bucket,Key=key) 
 
 def listObjectFolderS3(s3,bucket,prefix):
-    response = s3.list_objects(Bucket=bucket,Prefix=prefix)
+    response = s3.list_objects(Bucket=bucket,Prefix=prefix + "/")
     for content in response.get('Contents', []):
         key=content.get('Key')
         print("key = " + key)
