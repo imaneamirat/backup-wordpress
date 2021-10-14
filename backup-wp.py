@@ -82,7 +82,7 @@ def moveFolderS3(s3,bucket,pathFrom, pathTo):
         s3.delete_object(Bucket=bucket,Key=old_key) 
 
 def deleteFolderS3(s3,bucket,prefix):
-    response = s3.list_objects(Bucket=bucket,Prefix=prefix)
+    response = s3.list_objects(Bucket=bucket,Prefix=prefix + "/")
     for content in response.get('Contents', []):
         key=content.get('Key')
         if VERBOSE == 2:
