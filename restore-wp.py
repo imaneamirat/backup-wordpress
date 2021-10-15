@@ -160,7 +160,7 @@ else:
 print ("")
 print ("Starting Import of MySQL Dump")
 
-importcmd = "zcat " + pipes.quote(TODAYRESTOREPATH) + "/" + DB_NAME + ".sql.gz | mysql -h " + DB_HOST + DB_NAME
+importcmd = "zcat " + pipes.quote(TODAYRESTOREPATH) + "/" + DB_NAME + ".sql.gz | mysql -h " + DB_HOST + " " + DB_NAME
 
 os.system(importcmd)
 
