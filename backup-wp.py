@@ -33,6 +33,7 @@ import tarfile
 import boto3
 import ftplib
 import tools
+import argparse
 from botocore.config import Config
 
 
@@ -68,8 +69,16 @@ mkdir /data/backup/dayJ
 
 2) copy new backup files in /data/backup/dayJ
 '''
+# create parser
+parser = argparse.ArgumentParser()
+ 
+# add arguments to the parser
+parser.add_argument("--verbose",type=int,default=0)
 
-VERBOSE = 2
+# parse the arguments
+args = parser.parse_args()
+
+VERBOSE = args.verbose
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
@@ -123,43 +132,66 @@ for index in range(int(BACKUP_RETENTION)):
             if exc.errno == errno.EEXIST and os.path.isdir(BACKUP_PATH):
                 pass
 
-# Local Backup Rotation
-if VERBOSE == 2:
-        print("")
-        print("Local backup folders rotation")
-        print("")
+# Check if a backup already occured today
+TODAY = time.strftime('%Y%m%d')
 
-# Delete DAYJ-RETENTION-1 folder
-BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
+DATEFILE = BACKUP_ROOT_PATH + "/" + "DAYJ" + "/" + "date.txt"
 try:
-    if VERBOSE == 2:
-        print("Delete of " + BACKUP_PATH)
-    shutil.rmtree(BACKUP_PATH, ignore_errors=False, onerror=None)
+    os.stat(DATEFILE)
 except:
+    BACKUP_ROTATION = False
     if VERBOSE == 2:
-        print("Error during delete of " + BACKUP_PATH)
+        print("ROTATION = False ") 
     pass
-
-
-# Move content of DAYJ-N to DAYJ-(N+1)
-for index in range(int(BACKUP_RETENTION)-2,-1,-1):
-    if index == 0:
-        BACKUP_PATH_FROM = BACKUP_ROOT_PATH + "/DAYJ"
-        BACKUP_PATH_TO = BACKUP_ROOT_PATH + "/DAYJ-1"
+else:
+    # First read content of datefile
+    datefile = open(DATEFILE,"r")
+    DATEINFILE = datefile.readline()
+    # Now compare DATEINFILE with TODAY
+    if DATEINFILE == TODAY:
+        # Backup already occured today, so no ROTATION needed
+        BACKUP_ROTATION = False
+        if VERBOSE == 2:
+            print("ROTATION = False ") 
     else:
-        BACKUP_PATH_FROM = BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
-        BACKUP_PATH_TO = BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
-    if VERBOSE == 2:
-        print("Rename from " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO)
+        # Local Backup Rotation
+        BACKUP_ROTATION = True
+        if VERBOSE == 2:
+                print("")
+                print("Local backup folders rotation")
+                print("")
 
-    os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
-    
-# Create DAYJ folder
+        # Delete DAYJ-RETENTION-1 folder
+        BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
+        try:
+            if VERBOSE == 2:
+                print("Delete of " + BACKUP_PATH)
+            shutil.rmtree(BACKUP_PATH, ignore_errors=False, onerror=None)
+        except:
+            if VERBOSE == 2:
+                print("Error during delete of " + BACKUP_PATH)
+            pass
+
+        # Move content of DAYJ-N to DAYJ-(N+1)
+        for index in range(int(BACKUP_RETENTION)-2,-1,-1):
+            if index == 0:
+                BACKUP_PATH_FROM = BACKUP_ROOT_PATH + "/DAYJ"
+                BACKUP_PATH_TO = BACKUP_ROOT_PATH + "/DAYJ-1"
+            else:
+                BACKUP_PATH_FROM = BACKUP_ROOT_PATH + "/DAYJ-" + str(index)
+                BACKUP_PATH_TO = BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
+            if VERBOSE == 2:
+                print("Rename from " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO)
+
+            os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
+
+        # Create DAYJ folder
+        BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ"
+        if VERBOSE == 2:
+                print("Create folder " + BACKUP_PATH )
+        os.mkdir(BACKUP_PATH)     
+
 BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ"
-if VERBOSE == 2:
-        print("Create folder " + BACKUP_PATH )
-os.mkdir(BACKUP_PATH)     
-
 
 # Part1 : Database backup.
 if VERBOSE >=1 :
@@ -169,7 +201,7 @@ if VERBOSE >=1 :
 dumpcmd = "mysqldump -h " + DB_HOST + " " + DB_NAME + " > " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
 
 os.system(dumpcmd)
-gzipcmd = "gzip " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
+gzipcmd = "gzip -f " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
 os.system(gzipcmd)
 localMysqlBackup=pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql.gz"
 
@@ -185,10 +217,10 @@ if VERBOSE >=1:
 if VERBOSE >=1:
     print ("")
     print ("Starting backup of Wordpress Site folder")
-#declare filename
+# Declare filename
 wp_archive = BACKUP_PATH + "/" + "wordpress.site.tar.gz"
 
-#open file in write mode
+# Open file in write mode
 tar = tarfile.open(wp_archive,"w:gz")
 tar.add(WP_PATH)
 tar.close()
@@ -200,8 +232,13 @@ if VERBOSE >= 1:
     print ("")
     print ("Backup of  Wordpress Site folder completed")
 
+# Part 3 : Put datefile in DAYJ
+datefile = open(DATEFILE,"w")
+datefile.write(TODAY)
+datefile.close()
 
-# Part 3 : Copy to BACKUP_DEST
+
+# Part 4 : Copy to BACKUP_DEST
 
 if BACKUP_DEST == 'S3':
     if VERBOSE >= 1:
@@ -226,35 +263,36 @@ if BACKUP_DEST == 'S3':
         config = my_config
     )
 
-    # Rotation of backup "folders"
-    if VERBOSE == 2:
-        print("")
-        print ("S3 folders rotation")  
-    # Delete DAYJ-RETENTION-1 folder
-    S3_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
-    if VERBOSE == 2:
-        print("")
-        print("First delete all files in " + S3_PATH    )
-    tools.deleteFolderS3(s3_client,S3_BUCKET,S3_PATH,VERBOSE)
-
-    if VERBOSE == 2:
-        print("")
-
-    # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(int(BACKUP_RETENTION)-2,-1,-1):
-        if index == 0:
-            S3_PATH_FROM = "DAYJ"
-            S3_PATH_TO = "DAYJ-1"
-        else:
-            S3_PATH_FROM = "DAYJ-" + str(index)
-            S3_PATH_TO = "DAYJ-" + str(index+1)
+    if BACKUP_ROTATION == True:
+        # Rotation of backup "folders"
         if VERBOSE == 2:
-            print("Move files from " + S3_PATH_FROM + " to " + S3_PATH_TO) 
-#        listObjectFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO)
-        tools.moveFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO,VERBOSE)
-    
+            print("")
+            print ("S3 folders rotation")  
+        # Delete DAYJ-RETENTION-1 folder
+        S3_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
+        if VERBOSE == 2:
+            print("")
+            print("First delete all files in " + S3_PATH    )
+        tools.deleteFolderS3(s3_client,S3_BUCKET,S3_PATH,VERBOSE)
+
+        if VERBOSE == 2:
+            print("")
+
+        # Move content of DAYJ-N to DAYJ-(N+1)
+        for index in range(int(BACKUP_RETENTION)-2,-1,-1):
+            if index == 0:
+                S3_PATH_FROM = "DAYJ"
+                S3_PATH_TO = "DAYJ-1"
+            else:
+                S3_PATH_FROM = "DAYJ-" + str(index)
+                S3_PATH_TO = "DAYJ-" + str(index+1)
+            if VERBOSE == 2:
+                print("Move files from " + S3_PATH_FROM + " to " + S3_PATH_TO) 
+    #        listObjectFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO)
+            tools.moveFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO,VERBOSE)
+        
     # Finaly copy new backup files to DAYJ folder
-    for file in [localMysqlBackup,wp_archive]:
+    for file in [localMysqlBackup,wp_archive,DATEFILE]:
         file_name = os.path.basename(file)
         new_name = "DAYJ/" + file_name
         if VERBOSE == 2:
@@ -291,55 +329,56 @@ else:
             if VERBOSE == 2:
                 print("Error during Create folder of " + BACKUP_PATH + " ie Folder already exist")
             pass
-
-    # Backup Rotation
-    if VERBOSE == 2:
-        print("")
-        print ("FTP folders rotation")  
-    # Delete DAYJ-RETENTION-1 folder
-    FTP_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
-    if VERBOSE == 2:
-        print("")
-        print("First delete all files in " + FTP_PATH)
-    ftpserver.cwd(FTP_PATH)
-    for file in ftpserver.nlst():
-        if VERBOSE == 2:
-            print("Delete file " + file)
-        ftpserver.delete(file)
-    ftpserver.cwd("..")
-    try:
-        if VERBOSE == 2:
-            print("Delete folder " + FTP_PATH)
-        ftpserver.rmd(FTP_PATH)
-    except:
-        if VERBOSE == 2:
-            print("Error during delete of folder " + FTP_PATH + " ie Folder not empty")
-        pass
     
-    if VERBOSE == 2:
-        print("")
-
-    # Move content of DAYJ-N to DAYJ-(N+1)
-    for index in range(int(BACKUP_RETENTION)-2,-1,-1):
-        if index == 0:
-            FTP_PATH_FROM = "DAYJ"
-            FTP_PATH_TO = "DAYJ-1"
-        else:
-            FTP_PATH_FROM = "DAYJ-" + str(index)
-            FTP_PATH_TO = "DAYJ-" + str(index+1)
+    if BACKUP_ROTATION == True:
+        # Backup Rotation
         if VERBOSE == 2:
-            print("Rename from " + FTP_PATH_FROM + " to " + FTP_PATH_TO) 
-        ftpserver.rename(FTP_PATH_FROM,FTP_PATH_TO)
-    
-    # Create DAYJ folder
-    FTP_PATH="DAYJ"
-    if VERBOSE == 2:
             print("")
-            print("Create folder " + FTP_PATH)
+            print ("FTP folders rotation")  
+        # Delete DAYJ-RETENTION-1 folder
+        FTP_PATH="DAYJ-" + str(int(BACKUP_RETENTION)-1)
+        if VERBOSE == 2:
             print("")
-    ftpserver.mkd(FTP_PATH)   
+            print("First delete all files in " + FTP_PATH)
+        ftpserver.cwd(FTP_PATH)
+        for file in ftpserver.nlst():
+            if VERBOSE == 2:
+                print("Delete file " + file)
+            ftpserver.delete(file)
+        ftpserver.cwd("..")
+        try:
+            if VERBOSE == 2:
+                print("Delete folder " + FTP_PATH)
+            ftpserver.rmd(FTP_PATH)
+        except:
+            if VERBOSE == 2:
+                print("Error during delete of folder " + FTP_PATH + " ie Folder not empty")
+            pass
+        
+        if VERBOSE == 2:
+            print("")
 
-    for file in [localMysqlBackup,wp_archive]:
+        # Move content of DAYJ-N to DAYJ-(N+1)
+        for index in range(int(BACKUP_RETENTION)-2,-1,-1):
+            if index == 0:
+                FTP_PATH_FROM = "DAYJ"
+                FTP_PATH_TO = "DAYJ-1"
+            else:
+                FTP_PATH_FROM = "DAYJ-" + str(index)
+                FTP_PATH_TO = "DAYJ-" + str(index+1)
+            if VERBOSE == 2:
+                print("Rename from " + FTP_PATH_FROM + " to " + FTP_PATH_TO) 
+            ftpserver.rename(FTP_PATH_FROM,FTP_PATH_TO)
+        
+        # Create DAYJ folder
+        FTP_PATH="DAYJ"
+        if VERBOSE == 2:
+                print("")
+                print("Create folder " + FTP_PATH)
+                print("")
+        ftpserver.mkd(FTP_PATH)   
+
+    for file in [localMysqlBackup,wp_archive,DATEFILE]:
         if VERBOSE >= 1:
             print("Transfering " + file + " to " + FTP_PATH)
         result=tools.uploadftp(ftpserver,file,FTP_PATH)

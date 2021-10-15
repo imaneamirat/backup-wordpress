@@ -22,6 +22,8 @@
 # Import required python libraries
 
 import os
+import shutil
+import errno
 import time
 import datetime
 import pipes
@@ -31,13 +33,29 @@ import tarfile
 import boto3
 import ftplib
 import tools
+import random
+import argparse
 from botocore.config import Config
 
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
+#
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
+ 
 
-VERBOSE = 2
+ 
+# create parser
+parser = argparse.ArgumentParser()
+ 
+# add arguments to the parser
+parser.add_argument("--day",type=int,default=0)
+parser.add_argument("--verbose",type=int,default=0)
+ 
+# parse the arguments
+args = parser.parse_args()
+
+DAYTORESTORE=args.day
+VERBOSE = args.verbose
 
 CONFIG_FILE = "/etc/backup-wp.conf"
 
@@ -50,7 +68,7 @@ DB_NAME = config.get('DB','DB_NAME')
 
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
 BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
-
+BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
 
 if BACKUP_DEST == 'S3':
     S3_BUCKET = config.get('BACKUP','S3_BUCKET')
@@ -67,14 +85,18 @@ else:
     exit(1)
 
 # Getting current DateTime to create the separate backup folder like "20210921".
+
 DATETIME = time.strftime('%Y%m%d')
-TODAYRESTOREPATH = BACKUP_PATH + '/' + DATETIME
+TODAYRESTOREPATH = BACKUP_PATH + '/' + "RESTORE-" +DATETIME
+
 
 # Checking if backup folder already exists or not. If not exists will create it.
 try:
     os.stat(TODAYRESTOREPATH)
 except:
     os.mkdir(TODAYRESTOREPATH)
+
+
 
 
 # Part1 : Retrieve backup files
@@ -104,10 +126,15 @@ if BACKUP_DEST == 'S3':
         config=my_config
     )
 
+    if DAYTORESTORE == 0:
+        S3_PATH = "DAYJ"
+    else:
+        S3_PATH = "DAYJ-" + DAYTORESTORE
+    
     for filename in [MysqlBackupFilename,WordPressBackupFilename]:
         FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename
         with open(FileFullPath, 'wb') as f:
-            s3_client.download_file(S3_BUCKET,filename,f)
+            s3_client.download_file(S3_BUCKET,S3_PATH + "/" + filename,f)
 
     print ("")
     print ("Download from AWS S3 completed")   
