@@ -133,8 +133,9 @@ if BACKUP_DEST == 'S3':
     
     for filename in [MysqlBackupFilename,WordPressBackupFilename]:
         FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename
+        KEY=S3_PATH + "/" + filename
         with open(FileFullPath, 'wb') as f:
-            s3_client.download_file(S3_BUCKET,S3_PATH + "/" + filename,f)
+            s3_client.download_file(Bucket=S3_BUCKET,Key=KEY,Filename=FileFullPath)
 
     print ("")
     print ("Download from AWS S3 completed")   
