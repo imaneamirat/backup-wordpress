@@ -137,7 +137,13 @@ if BACKUP_DEST == 'S3':
         FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename
         KEY=S3_PATH + "/" + filename
         with open(FileFullPath, 'wb') as f:
-            s3_client.download_file(Bucket=S3_BUCKET,Key=KEY,Filename=FileFullPath)
+            try:
+                s3_client.download_file(Bucket=S3_BUCKET,Key=KEY,Filename=FileFullPath)
+            except:
+                if VERBOSE == 2:
+                    print("Error during download of " + KEY)
+                exit(1)
+                
 
     print ("")
     print ("Download from AWS S3 completed")   

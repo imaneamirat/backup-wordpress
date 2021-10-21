@@ -39,7 +39,7 @@ from botocore.config import Config
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-# Todo : Backup Folder Rotation Strategy
+# Todo : File integrity check
 '''
 Init : 
 
@@ -111,6 +111,9 @@ elif BACKUP_DEST == 'FTP':
 else:
     if VERBOSE >= 1:
         print("Bad value in " + CONFIG_FILE + ". Value of BACKUP_DEST should be S3 or FTP only. Exiting")
+        MESSAGE="""Backup failed
+        Bad value in """ +  CONFIG_FILE + ". Value of BACKUP_DEST should be S3 or FTP only. Exiting"
+        tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress", smtphost=SMTP_HOST)
     exit(1)
 
 # Starting process
@@ -174,7 +177,10 @@ else:
         except:
             if VERBOSE == 2:
                 print("Error during delete of " + BACKUP_PATH)
-            pass
+            MESSAGE="""Backup failed
+            Error during delete of """ + BACKUP_PATH 
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress", smtphost=SMTP_HOST)
+            exit(1)
 
         # Move content of DAYJ-N to DAYJ-(N+1)
         for index in range(int(BACKUP_RETENTION)-2,-1,-1):
@@ -187,7 +193,15 @@ else:
             if VERBOSE == 2:
                 print("Rename from " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO)
 
-            os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
+            try:
+                os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
+            except:
+                    if VERBOSE == 2:
+                        print("Error during rename of " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO) 
+                    MESSAGE="""Backup failed
+                    Error during rename of """ + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO
+                    tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+                    exit(1)
 
         # Create DAYJ folder
         BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ"
@@ -203,10 +217,26 @@ if VERBOSE >=1 :
     print ("Starting Backup of MySQL")
 
 dumpcmd = "mysqldump -h " + DB_HOST + " " + DB_NAME + " > " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
+try:
+    os.system(dumpcmd)
+except:
+    if VERBOSE == 2:
+        print("Error during mysqldump")
+    MESSAGE="""Backup failed
+    Error during mysqldump""" 
+    tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+    exit(1)
 
-os.system(dumpcmd)
 gzipcmd = "gzip -f " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
-os.system(gzipcmd)
+try:
+    os.system(gzipcmd)
+except:
+    if VERBOSE == 2:
+        print("Error during Gzip of mysqldump")
+    MESSAGE="""Backup failed
+    Error during Gzip of mysqldump""" 
+    tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+    exit(1)    
 localMysqlBackup=pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql.gz"
 
 if VERBOSE == 2:
@@ -225,9 +255,17 @@ if VERBOSE >=1:
 wp_archive = BACKUP_PATH + "/" + "wordpress.site.tar.gz"
 
 # Open file in write mode
-tar = tarfile.open(wp_archive,"w:gz")
-tar.add(WP_PATH)
-tar.close()
+try:
+    tar = tarfile.open(wp_archive,"w:gz")
+    tar.add(WP_PATH)
+    tar.close()
+except:
+    if VERBOSE == 2:
+        print("Error during Tar GZ of of Wordpress site")
+    MESSAGE="""Backup failed
+    Error during Tar GZ of of Wordpress site""" 
+    tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+    exit(1)
 
 if VERBOSE == 2:
         print("Local Wordpress site dump copied in " + wp_archive )
@@ -237,10 +275,17 @@ if VERBOSE >= 1:
     print ("Backup of  Wordpress Site folder completed")
 
 # Part 3 : Put datefile in DAYJ
-datefile = open(DATEFILE,"w")
-datefile.write(TODAY)
-datefile.close()
-
+try:
+    datefile = open(DATEFILE,"w")
+    datefile.write(TODAY)
+    datefile.close()
+except:
+    if VERBOSE == 2:
+        print("Error during create of DATEFILE")
+    MESSAGE="""Backup failed
+    Error during create of DATEFILE""" 
+    tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+    exit(1)   
 
 # Part 4 : Copy to BACKUP_DEST
 
@@ -259,13 +304,20 @@ if BACKUP_DEST == 'S3':
         }
     )
 
-
-    s3_client = boto3.client(
-        's3',
-        aws_access_key_id = S3_ACCESS_KEY,
-        aws_secret_access_key = S3_SECRET_ACCESS_KEY, 
-        config = my_config
-    )
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id = S3_ACCESS_KEY,
+            aws_secret_access_key = S3_SECRET_ACCESS_KEY, 
+            config = my_config
+        )
+    except:
+        if VERBOSE == 2:
+            print("Error during S3 connection")
+        MESSAGE="""Backup failed
+        Error during S3 connection. Please check your S3 parameters in """ + CONFIG_FILE
+        tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+        exit(1)
 
     if BACKUP_ROTATION == True:
         # Rotation of backup "folders"
@@ -317,7 +369,15 @@ if BACKUP_DEST == 'S3':
         new_name = "DAYJ/" + file_name
         if VERBOSE == 2:
             print("Transfering file " + file_name + " to " + new_name) 
-        s3_client.upload_file(file, S3_BUCKET, new_name)
+        try:
+            s3_client.upload_file(file, S3_BUCKET, new_name)
+        except:
+            if VERBOSE == 2:
+                print("Error during upload of file " + file_name + " in " + new_name)
+            MESSAGE="""Backup failed
+            Error during upload of file """ + file_name + " in " + new_name 
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+            exit(1)
 
     if VERBOSE >= 1:
         print ("")
@@ -348,10 +408,10 @@ else:
         except:
             if VERBOSE == 2:
                 print("Error during Create folder of " + BACKUP_PATH + " ie Folder already exist")
-                MESSAGE="""Backup failed
-                Error during create folder of """ + FTP_PATH + " ie Folder already exist" 
-                tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
-                exit(1)
+            MESSAGE="""Backup failed
+            Error during create folder of """ + FTP_PATH + " ie Folder already exist" 
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+            exit(1)
     
     if BACKUP_ROTATION == True:
         # Backup Rotation
@@ -363,7 +423,24 @@ else:
         if VERBOSE == 2:
             print("")
             print("First delete all files in " + FTP_PATH)
-        ftpserver.cwd(FTP_PATH)
+        try:
+            ftpserver.cwd(FTP_PATH)
+        except:
+            if VERBOSE == 2:
+                print("Error accessing folder " + FTP_PATH + " ie Folder does not exist")
+            MESSAGE="""Backup failed
+            Error accessing folder """ + FTP_PATH + " ie Folder does not exist" 
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+            exit(1)
+        try:
+            file_list = ftpserver.nlst()
+        except:
+            if VERBOSE == 2:
+                print("Error listing files in folder " + FTP_PATH )
+            MESSAGE="""Backup failed
+            Error listing files in folder """ + FTP_PATH
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+            exit(1)
         for file in ftpserver.nlst():
             if VERBOSE == 2:
                 print("Delete file " + file)
