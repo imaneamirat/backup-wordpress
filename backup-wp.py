@@ -89,6 +89,10 @@ WP_PATH = config.get('WP','WP_PATH')
 DB_HOST = config.get('DB','DB_HOST')
 DB_NAME = config.get('DB','DB_NAME')
 
+SMTP_HOST = config.get('SMTP','SMTP_HOST')
+SMTP_FROM = config.get('SMTP','SMTP_FROM')
+SMTP_TO = config.get('SMTP','SMTP_TO')
+
 BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
 BACKUP_ROOT_PATH = config.get('BACKUP','LOCALBKPATH')
@@ -273,7 +277,15 @@ if BACKUP_DEST == 'S3':
         if VERBOSE == 2:
             print("")
             print("First delete all files in " + S3_PATH    )
-        tools.deleteFolderS3(s3_client,S3_BUCKET,S3_PATH,VERBOSE)
+        try:
+            tools.deleteFolderS3(s3_client,S3_BUCKET,S3_PATH,VERBOSE)
+        except:
+            if VERBOSE == 2:
+                print("Delete files from " + S3_PATH + " failed")
+            MESSAGE="""Backup failed
+            Error during delete of files from """ + S3_PATH
+            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+            exit(1)
 
         if VERBOSE == 2:
             print("")
@@ -289,7 +301,15 @@ if BACKUP_DEST == 'S3':
             if VERBOSE == 2:
                 print("Move files from " + S3_PATH_FROM + " to " + S3_PATH_TO) 
     #        listObjectFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO)
-            tools.moveFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO,VERBOSE)
+            try:
+                tools.moveFolderS3(s3_client,S3_BUCKET,S3_PATH_FROM,S3_PATH_TO,VERBOSE)
+            except:
+                if VERBOSE == 2:
+                    print("Move files from " + S3_PATH_FROM + " to " + S3_PATH_TO + " failed")
+                MESSAGE="""Backup failed
+                Error during move of files from """ + S3_PATH_FROM + " to " + S3_PATH_TO
+                tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+                exit(1)
         
     # Finaly copy new backup files to DAYJ folder
     for file in [localMysqlBackup,wp_archive,DATEFILE]:
@@ -328,7 +348,10 @@ else:
         except:
             if VERBOSE == 2:
                 print("Error during Create folder of " + BACKUP_PATH + " ie Folder already exist")
-            pass
+                MESSAGE="""Backup failed
+                Error during create folder of """ + FTP_PATH + " ie Folder already exist" 
+                tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+                exit(1)
     
     if BACKUP_ROTATION == True:
         # Backup Rotation
@@ -353,7 +376,10 @@ else:
         except:
             if VERBOSE == 2:
                 print("Error during delete of folder " + FTP_PATH + " ie Folder not empty")
-            pass
+                MESSAGE="""Backup failed
+                Error during delete of folder """ + FTP_PATH + " ie Folder not empty" 
+                tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+                exit(1)
         
         if VERBOSE == 2:
             print("")
@@ -394,4 +420,9 @@ else:
 if VERBOSE >= 1:
     print ("")
     print ("Backup script completed")
-    print ("Your backups have also been created locally in '" + BACKUP_PATH + "' directory")
+    print ("Your backups have also been created locally in " + BACKUP_PATH + " directory")
+
+MESSAGE="""Backup script completed
+Your backups have also been created locally in """ + BACKUP_PATH + " directory" 
+
+tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)

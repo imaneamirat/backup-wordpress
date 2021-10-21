@@ -41,9 +41,24 @@ from botocore.config import Config
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 #
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
- 
 
- 
+CONFIG_FILE = "/etc/backup-wp.conf"
+
+config = configparser.ConfigParser()
+config.read(CONFIG_FILE)
+
+WP_PATH = config.get('WP','WP_PATH')
+DB_HOST = config.get('DB','DB_HOST')
+DB_NAME = config.get('DB','DB_NAME')
+
+SMTP_HOST = config.get('SMTP','SMTP_HOST')
+SMTP_FROM = config.get('SMTP','SMTP_FROM')
+SMTP_TO = config.get('SMTP','SMTP_TO')
+
+BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
+BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
+BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
+
 # create parser
 parser = argparse.ArgumentParser()
  
@@ -56,19 +71,6 @@ args = parser.parse_args()
 
 DAYTORESTORE=args.day
 VERBOSE = args.verbose
-
-CONFIG_FILE = "/etc/backup-wp.conf"
-
-config = configparser.ConfigParser()
-config.read(CONFIG_FILE)
-
-WP_PATH = config.get('WP','WP_PATH')
-DB_HOST = config.get('DB','DB_HOST')
-DB_NAME = config.get('DB','DB_NAME')
-
-BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
-BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
-BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
 
 if BACKUP_DEST == 'S3':
     S3_BUCKET = config.get('BACKUP','S3_BUCKET')
@@ -129,7 +131,7 @@ if BACKUP_DEST == 'S3':
     if DAYTORESTORE == 0:
         S3_PATH = "DAYJ"
     else:
-        S3_PATH = "DAYJ-" + DAYTORESTORE
+        S3_PATH = "DAYJ-" + str(DAYTORESTORE)
     
     for filename in [MysqlBackupFilename,WordPressBackupFilename]:
         FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename

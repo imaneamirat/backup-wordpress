@@ -2,6 +2,24 @@ import os
 import ftplib
 import boto3
 from botocore.config import Config
+import smtplib
+from email.message import EmailMessage
+
+
+def sendmail(mailfrom="address@example.com",mailto="imaneamirat08@gmail.com",message="",subject="",smtphost="localhost"):
+    # me == the sender's email address
+    # you == the recipient's email address
+    # Create a text/plain message
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = mailfrom
+    msg['To'] = mailto
+    msg.set_content(message)
+
+    # Send the message via our own SMTP server.
+    s = smtplib.SMTP(smtphost)
+    s.send_message(msg)
+    s.quit()
 
 
 def moveFolderS3(s3,bucket,pathFrom, pathTo, VERBOSE=0):   

@@ -1,8 +1,35 @@
-This script backups WordPress data to either FTP server or AWS S3 depending on the configuration parameters
+Set of scripts to make backup and restore of a complete Wordpress server
+Composed of 
+- backup-wp.py : 
+Scripts to backup WordPress data to either FTP server or AWS S3 depending on the configuration parameters
 It will make backup of wordpress MySQL database and wordpress Apache folder  
 Backup process follow a Backup Folder Rotation Strategy using RETENTION parameter
 By Default, this script will read configuration from file /etc/backup-wp.conf
 Todo : Add the option -f to read parameters from a specified filename in the command line parameter
+Needs Python 3
+Tested on Python 3.10
+usage: backup-wp.py [-h] [--verbose VERBOSE]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --verbose VERBOSE
+
+- restore-wp.py :
+Scripts to restore WordPress data to either FTP server or AWS S3 depending on the configuration parameters
+It will first copy MySQL database backups and Wordpress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the wordpress website location 
+By Default, this script will read configuration from file /etc/backup-wp.conf
+Todo : Add the option -f to read parameters from a specified filename in the command line parameter
+Needs Python 3
+Tested on Python 3.10
+usage: restore-wp.py [-h] [--day DAY] [--verbose VERBOSE]
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --day DAY
+  --verbose VERBOSE
+
+- tools.py
+Set of functions used by both backup and restore scripts
 
 Verbose mode :
 Set VERBOSE=0 to disable logs display
@@ -45,6 +72,10 @@ WP_PATH=/var/www/html
 [DB]
 DB_HOST=localhost
 DB_NAME=wordpress
+[SMTP]
+SMTP_HOST=localhost
+SMTP_FROM=address@example.com
+SMTP_TO=address@recipient.com
 
 [BACKUP]
 LOCALBKPATH=/data/backup
@@ -76,9 +107,3 @@ password=Imane$2021!
 host=localhost
 user=wpu
 password=Imane$2021!
-
-
-
-
-
-
