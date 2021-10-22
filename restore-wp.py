@@ -13,9 +13,9 @@
 #
 # Written by : Imane AMIRAT
 # Created date: Sept 30, 2021
-# Last modified: Oct 1, 2021
+# Last modified: Oct 22, 2021
 # Tested with : Python 3.8
-# Script Revision: 0.1
+# Script Revision: 0.9
 #
 ##########################################################
 
@@ -35,6 +35,7 @@ import ftplib
 import tools
 import random
 import argparse
+import encrypt
 from botocore.config import Config
 
 
@@ -58,6 +59,8 @@ SMTP_TO = config.get('SMTP','SMTP_TO')
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
 BACKUP_PATH = config.get('BACKUP','LOCALBKPATH')
 BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
+
+ENCRYPTION_KEYPATH = config.get('ENCRYPT','KEYPATH')
 
 # create parser
 parser = argparse.ArgumentParser()
@@ -103,8 +106,8 @@ except:
 
 # Part1 : Retrieve backup files
 
-MysqlBackupFilename="wordpress.sql.gz"
-WordPressBackupFilename="wordpress.site.tar.gz"
+MysqlBackupFilename="wordpress.sql.gz.bin"
+WordPressBackupFilename="wordpress.site.tar.gz.bin"
 
 if BACKUP_DEST == 'S3':
     print ("")
@@ -164,7 +167,15 @@ else:
     print ("")
     print ("Copy to FTP Server completed")   
 
-# Part2 : Database Restore.
+# Part 2 : Decrypt files
+fdKey = open(ENCRYPTION_KEYPATH,'rb')
+ENCRYPTION_KEY = fdKey.read()
+
+for file in [MysqlBackupFilename,WordPressBackupFilename]:
+    print("Decrypting " + file)
+    result=encrypt.decrypt_file(TODAYRESTOREPATH + "/" + file,ENCRYPTION_KEY)
+
+# Part3 : Database Restore.
 print ("")
 print ("Starting Import of MySQL Dump")
 

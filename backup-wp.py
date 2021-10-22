@@ -13,9 +13,9 @@
 #
 # Written by : Imane AMIRAT
 # Created date: Jul 24, 2021
-# Last modified: Oct 13, 2021
-# Tested with : Python 3.8
-# Script Revision: 0.8
+# Last modified: Oct 22, 2021
+# Tested with : Python 3.9
+# Script Revision: 0.9
 #
 ##########################################################
 
@@ -34,7 +34,11 @@ import boto3
 import ftplib
 import tools
 import argparse
+import Crypto
+import encrypt
 from botocore.config import Config
+
+
 
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
@@ -96,6 +100,8 @@ SMTP_TO = config.get('SMTP','SMTP_TO')
 BACKUP_RETENTION = config.get('BACKUP','BACKUP_RETENTION')
 BACKUP_DEST = config.get('BACKUP','BACKUP_DEST')
 BACKUP_ROOT_PATH = config.get('BACKUP','LOCALBKPATH')
+
+ENCRYPTION_KEYPATH = config.get('ENCRYPT','KEYPATH')
 
 
 if BACKUP_DEST == 'S3':
@@ -287,7 +293,25 @@ except:
     tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
     exit(1)   
 
-# Part 4 : Copy to BACKUP_DEST
+
+# Part 4 : Encrypt using AES-256
+fdKey = open(ENCRYPTION_KEYPATH,'rb')
+ENCRYPTION_KEY = fdKey.read()
+for file in [localMysqlBackup,wp_archive,DATEFILE]:
+    file_name = os.path.basename(file)
+    if VERBOSE == 2:
+        print("Encrypt file " + file_name) 
+    try:
+        encrypt.encrypt_file(file,ENCRYPTION_KEY)
+    except:
+        if VERBOSE == 2:
+            print("Error during encryption of file " + file_name)
+        MESSAGE="""Backup failed
+        Error during encryption of file """ + file_name 
+        tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+        exit(1)
+
+# Part 5 : Copy to BACKUP_DEST
 
 if BACKUP_DEST == 'S3':
     if VERBOSE >= 1:
@@ -364,7 +388,7 @@ if BACKUP_DEST == 'S3':
                 exit(1)
         
     # Finaly copy new backup files to DAYJ folder
-    for file in [localMysqlBackup,wp_archive,DATEFILE]:
+    for file in [localMysqlBackup + ".bin",wp_archive + ".bin",DATEFILE + ".bin"]:
         file_name = os.path.basename(file)
         new_name = "DAYJ/" + file_name
         if VERBOSE == 2:
@@ -481,7 +505,7 @@ else:
                 print("")
         ftpserver.mkd(FTP_PATH)   
 
-    for file in [localMysqlBackup,wp_archive,DATEFILE]:
+    for file in [localMysqlBackup + ".bin",wp_archive + ".bin",DATEFILE + ".bin"]:
         if VERBOSE >= 1:
             print("Transfering " + file + " to " + FTP_PATH)
         result=tools.uploadftp(ftpserver,file,FTP_PATH)
