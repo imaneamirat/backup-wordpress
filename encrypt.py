@@ -5,15 +5,6 @@ from Crypto import Random
 from binascii import b2a_hex
 from pathlib import Path
 
-
-def encrypt_dir(path,key):
-    for root, _, files in os.walk("."):
-        for file in files:
-            file_path = os.path.join(root, file)
-            print(file_path + " is encrypting.")
-            encrypt_file(file_path,key)
-
-
 def encrypt_file(path,key):
     # get the plaintext
     with open(path,"rb") as f:
