@@ -1,19 +1,21 @@
 Set of scripts to make backup and restore of a complete Wordpress server
+
 Composed of 
+
 - backup-wp.py : 
-***
+
 Scripts to backup WordPress data to either FTP server or AWS S3 depending on the configuration parameters.
-***
+
 It will make backup of wordpress MySQL database and wordpress Apache folder  
-***
+
 Backup process follow a Backup Folder Rotation Strategy using RETENTION parameter
-***
+
 By Default, this script will read configuration from file /etc/backup-wp.conf
-***
+
 Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-***
+
 Needs Python 3
-***
+
 Tested on Python 3.10
 ```
 usage: backup-wp.py [-h] [-v {0,1,2}]
@@ -26,15 +28,15 @@ optional arguments:
 ```
 - restore-wp.py :
 Scripts to restore WordPress data to either FTP server or AWS S3 depending on the configuration parameters
-***
+
 It will first copy MySQL database backups and Wordpress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the wordpress website location 
-***
+
 By Default, this script will read configuration from file /etc/backup-wp.conf
-***
+
 Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-***
+
 Needs Python 3
-***
+
 Tested on Python 3.10
 ```
 usage: restore-wp.py [-h] [-d DAY] [-v {0,1,2}]
@@ -47,7 +49,7 @@ optional arguments:
 ```
 - tools.py
 Set of functions used by both backup and restore scripts
-***
+
 - create-key.py
 Script to create a 256 bits key used for encryption
 ```
@@ -59,7 +61,7 @@ optional arguments:
 ```
 - encrypt.py
 Set of functions used for encrypt en decrypt using AES-256
-***
+
 - wp_make_clean_install.py
 Ansible playbook to install a complete Wordpress server on a fresh new Debian 11 server
 ie install Apache2 + PHP7 + MySQL-server 5.7 + Wordpress
@@ -71,17 +73,17 @@ ansible-playbook wp_make_clean_install.py
 ```
 
 Verbose mode :
-***
+
 Set VERBOSE=0 to disable logs display
-***
+
 Set VERBOSE=1 to have minimal logs display
-***
+
 Set VERBOSE=2 to have full logs display
 
 Example for RETENTION = 7
 
 Init :
-***
+
 Create the following folders :
 ```
 /data/backup/dayJ
@@ -141,7 +143,7 @@ FTP_PATH=backup-wp
 ```
 
 Create the file .my.cnf in your HOME directory :
-***
+
 Content of .my.cnf :
 ```
 [client]
