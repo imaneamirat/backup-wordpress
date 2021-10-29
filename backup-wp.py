@@ -5,17 +5,17 @@
 # This python script is used to backup Wordpress website and associated mysql database
 # using mysqldump and tar utility.
 # Backups are copied to either :
-# - AWS S3 and encrypted using a private AES-256 key
+# - AWS S3 
 # or
 # - FTP server
-#
+# and encrypted using a private AES-256 key
 # This scripts needs root privileges
 #
 # Written by : Imane AMIRAT
 # Created date: Jul 24, 2021
-# Last modified: Oct 22, 2021
+# Last modified: Oct 29, 2021
 # Tested with : Python 3.9
-# Script Revision: 0.9
+# Script Revision: 1.0
 #
 ##########################################################
 
@@ -77,7 +77,7 @@ mkdir /data/backup/dayJ
 parser = argparse.ArgumentParser()
  
 # add arguments to the parser
-parser.add_argument("--verbose",type=int,default=0)
+parser.add_argument("-v","--verbose",type=int,default=0,choices=[0,1,2],help="0 disable verbose, 1 minimal verbose, 2 debug mode")
 
 # parse the arguments
 args = parser.parse_args()
@@ -267,7 +267,7 @@ try:
     tar.close()
 except:
     if VERBOSE == 2:
-        print("Error during Tar GZ of of Wordpress site")
+        print("Error during Tar GZ  of Wordpress site")
     MESSAGE="""Backup failed
     Error during Tar GZ of of Wordpress site""" 
     tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)

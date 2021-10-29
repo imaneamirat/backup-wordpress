@@ -66,8 +66,8 @@ ENCRYPTION_KEYPATH = config.get('ENCRYPT','KEYPATH')
 parser = argparse.ArgumentParser()
  
 # add arguments to the parser
-parser.add_argument("--day",type=int,default=0)
-parser.add_argument("--verbose",type=int,default=0)
+parser.add_argument("-d","--day",type=int,default=0,help="index of day in the past to be restored. Possible value from 0 to BACKUP_RETENTION - 1")
+parser.add_argument("-v","--verbose",type=int,default=0,choices=[0,1,2],help="0 disable verbose, 1 minimal verbose, 2 debug mode")
  
 # parse the arguments
 args = parser.parse_args()
