@@ -1,0 +1,10 @@
+---
+  - name: Include OS-specific variables.
+    include_vars: Debian.yml"
+    
+  - name: Install php
+    apt: name={{item}} state=present
+    notify: reload apache
+    with_items:
+     "{{ php_extensions }}"
+     

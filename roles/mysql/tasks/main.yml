@@ -1,0 +1,57 @@
+---
+  - name: Include OS-specific variables.
+    include_vars: "{{ ansible_os_family }}.yml"
+
+  - name: Install MySQL Server
+    apt:
+      name: mysql-server
+      state: present
+    notify:
+      - restart-mysql
+
+  - name: Install PyMySQL
+    apt:
+      name: python3-pymysql
+      state: present
+    notify:
+      - restart-mysql
+
+   #we could move this to a handler 
+  - name: ensure MySQL always starts
+    service:
+      name: "{{ mysql_service_name }}"
+      state: restarted
+      enabled: yes
+
+    
+  - name: check if root my.conf exists
+    stat:
+      path: "/root/.my.cnf"
+    register: my_cnf_status
+
+  - name: set root password
+    mysql_user:
+      login_user: 'root'
+      name: 'root'
+      password: "{{ mysql_root_password }}"
+      state: present
+      host: '%'
+
+
+  - name: Place ~/.my.cnf
+    template:
+     src: .my.cnf.j2
+     dest: "/root/.my.cnf"
+
+  - name: create WordPress Database
+    mysql_db:
+      name: "{{wordpress_database_name}}"
+      state: present
+
+  - name: Grant all previliges
+    mysql_user:
+      name: "{{mysql_wordpress_username}}"
+      password: "{{ mysql_wordpress_password }}"
+      priv: '*.*:ALL'
+      host: '%'
+      state: present

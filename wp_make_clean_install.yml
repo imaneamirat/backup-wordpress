@@ -1,0 +1,16 @@
+---
+- hosts: wordpress
+  become: yes
+  vars:
+    mysql_root_password: TitfRp$2021
+    wordpress_database_name: wordpress
+    mysql_wordpress_username: wpu
+    mysql_wordpress_password: Imane$2021
+  roles:
+    - mysql
+    - apache
+    - php
+    - wordpress
+    
+
+
