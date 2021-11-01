@@ -1,7 +1,24 @@
 ---
   - name: Include OS-specific variables.
-    include_vars: Debian.yml"
-    
+    include_vars: "Debian.yml"
+  
+  - name: Ensure required packages to add Ondřej Surý's PHP repository
+    apt:
+      pkg:
+        - apt-transport-https
+        - lsb-release
+        - ca-certificates
+      state: present
+      update_cache: yes
+
+  - name: Add Sury's APT key (Debian)
+    apt_key: url="https://packages.sury.org/php/apt.gpg" state=present
+    when: ansible_distribution == 'Debian'
+
+  - name: Add Sury's APT repository (Debian)
+    apt_repository: repo="deb https://packages.sury.org/php/ {{ ansible_distribution_release }} main" state=present update_cache=yes
+    when: ansible_distribution == 'Debian'
+
   - name: Install php
     apt: name={{item}} state=present
     notify: reload apache

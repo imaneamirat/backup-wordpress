@@ -4,7 +4,7 @@
 
   - name: Install MySQL Server
     apt:
-      name: mysql-server
+      name: default-mysql-server
       state: present
     notify:
       - restart-mysql
@@ -29,14 +29,79 @@
       path: "/root/.my.cnf"
     register: my_cnf_status
 
-  - name: set root password
-    mysql_user:
-      login_user: 'root'
-      name: 'root'
-      password: "{{ mysql_root_password }}"
-      state: present
-      host: '%'
+  # This command will exit non-zero when the root password was set previously
+  - name: Check if root password is unset
+    shell: >
+      mysql -u root
+      -p'{{ mysql_root_password }}'
+      -h localhost
+      -S {{ mysql_socket }}
+      -e "quit"
+    changed_when: false
+    ignore_errors: true
+    register: root_pwd_check
+    tags: mysql
 
+  # Repeat runs with the same password can continue idempotently, otherwise fail.
+  - name: Check if the specified root password is already set
+    shell: >
+      mysqladmin -u root -p{{ mysql_root_password }} status
+    changed_when: false
+    no_log: true
+    when: root_pwd_check.rc != 0
+    tags: mysql
+
+  - name: Check for previously set unix_socket in plugin column
+    command: >
+      mysql -N -s -S {{ mysql_socket }} -u root -e
+      "SELECT plugin from mysql.user WHERE user = 'root'"
+    register: plugin_root_result
+    changed_when: plugin_root_result.stdout is search('unix_socket')
+    when: root_pwd_check.rc == 0
+    tags: mysql
+
+  - name: Set MySQL root password for the first time (root@localhost)
+    mysql_user:
+      name: root
+      password: "{{ mysql_root_password }}"
+      host: localhost
+      login_unix_socket: "{{ mysql_socket }}"
+      state: present
+    when: root_pwd_check.rc != 0
+    tags: mysql
+
+  - name: Remove unix_socket plugin if previously set
+    command: >
+      mysql -S {{ mysql_socket }} -u root -e
+      "UPDATE mysql.user SET plugin = '' WHERE user = 'root'; FLUSH PRIVILEGES;"
+    when:
+      - root_pwd_check.rc == 0
+      - plugin_root_result.stdout is search('unix_socket')
+    tags: mysql
+
+  - name: Set MySQL root password for 127.0.0.1, ::1, FQDN
+    mysql_user:
+      name: root
+      password: "{{ mysql_root_password }}"
+      host: "{{ item }}"
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+      login_unix_socket: "{{ mysql_socket }}"
+      state: present
+    with_items:
+      - ::1
+      - 127.0.0.1
+      - "{{ ansible_fqdn }}"
+    when: root_pwd_check.rc == 0
+    tags: mysql
+
+  # - name: set root password
+  #   mysql_user:
+  #     login_user: 'root'
+  #     name: 'root'
+  #     password: "{{ mysql_root_password }}"
+  #     state: present
+  #     host: '%'
 
   - name: Place ~/.my.cnf
     template:

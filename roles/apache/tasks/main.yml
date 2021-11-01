@@ -17,5 +17,9 @@
     apache2_module: 
       name: rewrite
       state: present
+
+  - name: disable default site
+    shell: a2dissite 000-default 
+      
   
  

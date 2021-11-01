@@ -6,6 +6,7 @@
     wordpress_database_name: wordpress
     mysql_wordpress_username: wpu
     mysql_wordpress_password: Imane$2021
+    mysql_socket: '/run/mysqld/mysqld.sock'
   roles:
     - mysql
     - apache
