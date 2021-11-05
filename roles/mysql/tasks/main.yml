@@ -107,14 +107,6 @@
     when: root_pwd_check.rc == 0
     tags: mysql
 
-  # - name: set root password
-  #   mysql_user:
-  #     login_user: 'root'
-  #     name: 'root'
-  #     password: "{{ mysql_root_password }}"
-  #     state: present
-  #     host: '%'
-
   - name: Place ~/.my.cnf
     template:
      src: .my.cnf.j2
