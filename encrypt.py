@@ -13,7 +13,7 @@ def encrypt_file(path,key):
     # The key length must be 16 (AES-128), 24 (AES-192), or 32 (AES-256) Bytes.
     cipher = AES.new(key, AES.MODE_GCM)
     cipher_data, tag = cipher.encrypt_and_digest(clear_data)
-    
+
     # output
     file_out = open(path + ".bin", "wb")
     [ file_out.write(x) for x in (cipher.nonce, tag, cipher_data) ]

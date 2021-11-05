@@ -4,6 +4,8 @@ import boto3
 from botocore.config import Config
 import smtplib
 from email.message import EmailMessage
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
 
 
 def sendmail(mailfrom="address@example.com",mailto="imaneamirat08@gmail.com",message="",subject="",smtphost="localhost"):
@@ -22,7 +24,7 @@ def sendmail(mailfrom="address@example.com",mailto="imaneamirat08@gmail.com",mes
     s.quit()
 
 
-def moveFolderS3(s3,bucket,pathFrom, pathTo, VERBOSE=0):   
+def moveFolderS3(s3,bucket,pathFrom, pathTo, VERBOSE=0):
     response = s3.list_objects(Bucket=bucket,Prefix=pathFrom + "/")
     for content in response.get('Contents', []):
         old_key = content.get('Key')
@@ -30,8 +32,8 @@ def moveFolderS3(s3,bucket,pathFrom, pathTo, VERBOSE=0):
         new_key = pathTo + "/" + filename
         if VERBOSE == 2:
             print("Copy " + old_key + " to " + new_key + " in Bucket " + bucket)
-        s3.copy_object(Bucket=bucket,CopySource="/" + bucket + "/" + old_key,Key=new_key) 
-        s3.delete_object(Bucket=bucket,Key=old_key) 
+        s3.copy_object(Bucket=bucket,CopySource="/" + bucket + "/" + old_key,Key=new_key)
+        s3.delete_object(Bucket=bucket,Key=old_key)
 
 def deleteFolderS3(s3,bucket,prefix,VERBOSE=0):
     response = s3.list_objects(Bucket=bucket,Prefix=prefix + "/")
@@ -39,7 +41,7 @@ def deleteFolderS3(s3,bucket,prefix,VERBOSE=0):
         key=content.get('Key')
         if VERBOSE == 2:
             print("Delete file " + key + " in Bucket " + bucket)
-        s3.delete_object(Bucket=bucket,Key=key) 
+        s3.delete_object(Bucket=bucket,Key=key)
 
 def listObjectFolderS3(s3,bucket,prefix,VERBOSE=0):
     response = s3.list_objects(Bucket=bucket,Prefix=prefix + "/")
@@ -80,4 +82,4 @@ def closeftp(ftp):
     try:
         ftp.quit()
     except:
-        ftp.close() 
+        ftp.close()

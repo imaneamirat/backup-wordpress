@@ -3,7 +3,7 @@ import argparse
 
 # create parser
 parser = argparse.ArgumentParser()
- 
+
 # add arguments to the parser
 parser.add_argument("--path",type=str,default="./Key")
 

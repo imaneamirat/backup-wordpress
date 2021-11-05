@@ -2,6 +2,12 @@
   - name: Include OS-specific variables.
     include_vars: "{{ ansible_os_family }}.yml"
 
+  - name: Create user wordpress
+    user:
+      name: '{{ wordpress_user }}'
+      shell: /bin/bash
+      group: '{{ wordpress_user }}'
+
   - name: Install MySQL Server
     apt:
       name: default-mysql-server
@@ -16,14 +22,14 @@
     notify:
       - restart-mysql
 
-   #we could move this to a handler 
+   #we could move this to a handler
   - name: ensure MySQL always starts
     service:
       name: "{{ mysql_service_name }}"
       state: restarted
       enabled: yes
 
-    
+
   - name: check if root my.conf exists
     stat:
       path: "/root/.my.cnf"
@@ -39,6 +45,8 @@
       -e "quit"
     changed_when: false
     ignore_errors: true
+    become: true
+    become_user: {{ backup_user }}
     register: root_pwd_check
     tags: mysql
 
@@ -112,6 +120,7 @@
     mysql_db:
       name: "{{wordpress_database_name}}"
       state: present
+      login_unix_socket: /run/mysqld/mysqld.sock
 
   - name: Grant all previliges
     mysql_user:
@@ -120,3 +129,4 @@
       priv: '*.*:ALL'
       host: '%'
       state: present
+      login_unix_socket: /run/mysqld/mysqld.sock

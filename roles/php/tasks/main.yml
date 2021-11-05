@@ -8,6 +8,7 @@
         - apt-transport-https
         - lsb-release
         - ca-certificates
+        - gpg
       state: present
       update_cache: yes
 
@@ -24,4 +25,3 @@
     notify: reload apache
     with_items:
      "{{ php_extensions }}"
-     

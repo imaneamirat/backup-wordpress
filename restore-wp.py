@@ -64,11 +64,11 @@ ENCRYPTION_KEYPATH = config.get('ENCRYPT','KEYPATH')
 
 # create parser
 parser = argparse.ArgumentParser()
- 
+
 # add arguments to the parser
 parser.add_argument("-d","--day",type=int,default=0,help="index of day in the past to be restored. Possible value from 0 to BACKUP_RETENTION - 1")
 parser.add_argument("-v","--verbose",type=int,default=0,choices=[0,1,2],help="0 disable verbose, 1 minimal verbose, 2 debug mode")
- 
+
 # parse the arguments
 args = parser.parse_args()
 
@@ -127,7 +127,7 @@ if BACKUP_DEST == 'S3':
     s3_client = boto3.client(
         's3',
         aws_access_key_id=S3_ACCESS_KEY,
-        aws_secret_access_key=S3_SECRET_ACCESS_KEY, 
+        aws_secret_access_key=S3_SECRET_ACCESS_KEY,
         config=my_config
     )
 
@@ -135,7 +135,7 @@ if BACKUP_DEST == 'S3':
         S3_PATH = "DAYJ"
     else:
         S3_PATH = "DAYJ-" + str(DAYTORESTORE)
-    
+
     for filename in [MysqlBackupFilename,WordPressBackupFilename]:
         FileFullPath=pipes.quote(TODAYRESTOREPATH) + "/" + filename
         KEY=S3_PATH + "/" + filename
@@ -146,15 +146,15 @@ if BACKUP_DEST == 'S3':
                 if VERBOSE == 2:
                     print("Error during download of " + KEY)
                 exit(1)
-                
+
 
     print ("")
-    print ("Download from AWS S3 completed")   
-    
+    print ("Download from AWS S3 completed")
+
 else:
     print ("")
-    print ("Starting Download from FTP Server")    
-    
+    print ("Starting Download from FTP Server")
+
     ftpserver=tools.connectftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
     ftpserver.cwd(FTP_PATH)
 
@@ -165,7 +165,7 @@ else:
     tools.closeftp(ftpserver)
 
     print ("")
-    print ("Copy to FTP Server completed")   
+    print ("Copy to FTP Server completed")
 
 # Part 2 : Decrypt files
 fdKey = open(ENCRYPTION_KEYPATH,'rb')
