@@ -46,7 +46,7 @@
     changed_when: false
     ignore_errors: true
     become: true
-    become_user: {{ backup_user }}
+    become_user: '{{ wordpress_user }}'
     register: root_pwd_check
     tags: mysql
 
