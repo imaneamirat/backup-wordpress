@@ -22,6 +22,7 @@
     shell: a2dissite 000-default
 
   - name: add www-data user to worpdress group
-    user: www-data
-    groups: '{{ wordpress_user }}'
-    append: yes
+    user:
+      name: 'www-data'
+      groups: '{{ wordpress_user }}'
+      append: yes
