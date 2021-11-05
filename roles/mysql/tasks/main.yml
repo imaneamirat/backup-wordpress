@@ -104,7 +104,7 @@
       - ::1
       - 127.0.0.1
       - "{{ ansible_fqdn }}"
-    when: root_pwd_check.rc == 0
+    when: root_pwd_check.rc != 0
     tags: mysql
 
   - name: Place ~/.my.cnf
