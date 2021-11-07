@@ -22,6 +22,24 @@
     - name: copy wordpress to the installation directory
       shell: cp -r -n /tmp/wordpress/* "{{ path }}"
 
+    - name: create group wordpress
+      group:
+        name: '{{ wordpress_user }}'
+
+    - name: Create user wordpress
+      user:
+        name: '{{ wordpress_user }}'
+        shell: /bin/bash
+        group: '{{ wordpress_user }}'
+        home: "{{ path }}"
+        create_home: no 
+
+    - name: add www-data user to worpdress group
+      user:
+        name: 'www-data'
+        groups: '{{ wordpress_user }}'
+        append: yes
+
     - file: path=/tmp/wordpress.tar.gz state=absent
     - file: path={{ path }} owner={{ wordpress_user }} group={{ wordpress_user }}  state=directory recurse=yes setype=httpd_sys_content_t
     - file: path={{ path }}/wp-content/ owner={{ wordpress_user }} group={{ wordpress_user }} mode=777 state=directory recurse=yes
@@ -39,6 +57,13 @@
 
 - name: Create the Virtual Host Config
   template: src=vhost.conf.j2 dest=/etc/apache2/sites-available/wordpress.conf mode=0644
+
+- name: Place ~/.my.cnf
+  template:
+    src: .my.cnf.j2
+    dest: "/home/{{ wordpress_user }}/.my.cnf"
+    owner: "{{ wordpress_user }}"
+    group: "{{ wordpress_user }}"
 
 - name: enable the Virtual Host
   file:

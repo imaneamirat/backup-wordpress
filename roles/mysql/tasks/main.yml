@@ -2,16 +2,6 @@
   - name: Include OS-specific variables.
     include_vars: "{{ ansible_os_family }}.yml"
 
-  - name: create group wordpress
-    group:
-      name: '{{ wordpress_user }}'
-
-  - name: Create user wordpress
-    user:
-      name: '{{ wordpress_user }}'
-      shell: /bin/bash
-      group: '{{ wordpress_user }}'
-
   - name: Install MySQL Server
     apt:
       name: default-mysql-server
@@ -111,13 +101,6 @@
     template:
      src: .my.cnf.j2
      dest: "/root/.my.cnf"
-
-  - name: Place ~/.my.cnf
-    template:
-     src: .my.cnf.j2
-     dest: "/home/{{ wordpress_user}}/.my.cnf"
-     owner: "{{ wordpress_user}}"
-     group: "{{ wordpress_user}}"
 
   - name: create WordPress Database
     mysql_db:

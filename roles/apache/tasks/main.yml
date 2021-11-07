@@ -6,7 +6,6 @@
     notify:
     - restart apache
 
-
   - name: ensure apache is started and starts on reboot
     service:
       name: "apache2"
@@ -20,9 +19,3 @@
 
   - name: disable default site
     shell: a2dissite 000-default
-
-  - name: add www-data user to worpdress group
-    user:
-      name: 'www-data'
-      groups: '{{ wordpress_user }}'
-      append: yes
