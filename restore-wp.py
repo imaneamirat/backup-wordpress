@@ -67,7 +67,7 @@ parser = argparse.ArgumentParser()
 
 # add arguments to the parser
 parser.add_argument("-d","--day",type=int,default=0,help="index of day in the past to be restored. Possible value from 0 to BACKUP_RETENTION - 1")
-parser.add_argument("-l","--local",help="Restore from local backup folders only")
+parser.add_argument("-l","--local",action='store_true', help="Restore from local backup folders only")
 parser.add_argument("-v","--verbose",type=int,default=0,choices=[0,1,2],help="0 disable verbose, 1 minimal verbose, 2 debug mode")
 
 # parse the arguments
@@ -78,7 +78,7 @@ VERBOSE = args.verbose
 LOCALRESTORE = args.local
 
 if LOCALRESTORE:
-    BACKUP_DEST == 'LOCAL'
+    BACKUP_DEST = 'LOCAL'
 
 if BACKUP_DEST == 'S3':
     S3_BUCKET = config.get('BACKUP','S3_BUCKET')
@@ -98,7 +98,7 @@ else:
 
 if BACKUP_DEST == 'LOCAL':
     if DAYTORESTORE:
-        TODAYRESTOREPATH = BACKUP_PATH + '/' + "DAYJ-" + DAYTORESTORE
+        TODAYRESTOREPATH = BACKUP_PATH + '/' + "DAYJ-" + str(DAYTORESTORE)
     else:
         TODAYRESTOREPATH = BACKUP_PATH + '/' + "DAYJ"
 
