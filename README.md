@@ -1,4 +1,4 @@
-Set of scripts to make backup and restore of a complete Wordpress server
+Set of scripts to make backup and restore of a complete WordPress server
 
 Composed of
 
@@ -6,9 +6,9 @@ Composed of
 
 Scripts to backup WordPress data to either FTP server or AWS S3 depending on the configuration parameters.
 
-It will make backup of wordpress MySQL database and wordpress Apache folder
+It will make backup of wordPress MySQL database and WordPress Apache folder
 
-Backup process follow a Backup Folder Rotation Strategy using RETENTION parameter
+Backup process follows a Backup Folder Rotation Strategy using RETENTION parameter
 
 By Default, this script will read configuration from file /etc/backup-wp.conf
 
@@ -16,7 +16,7 @@ Todo : Add the option -f to read parameters from a specified filename in the com
 
 Needs Python 3
 
-Tested on Python 3.10
+Tested on Python 3.9
 ```
 usage: backup-wp.py [-h] [-v {0,1,2}]
 
@@ -29,7 +29,7 @@ optional arguments:
 - restore-wp.py :
 Scripts to restore WordPress data to either FTP server or AWS S3 depending on the configuration parameters
 
-It will first copy MySQL database backups and Wordpress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the wordpress website location
+It will first copy MySQL database backups and WordPress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the WordPress website location
 
 By Default, this script will read configuration from file /etc/backup-wp.conf
 
@@ -37,7 +37,7 @@ Todo : Add the option -f to read parameters from a specified filename in the com
 
 Needs Python 3
 
-Tested on Python 3.10
+Tested on Python 3.9
 ```
 usage: restore-wp.py [-h] [-d DAY] [-v {0,1,2}]
 
@@ -79,8 +79,9 @@ Ansible playbook to restore a WordPress backup on a clean WordPress install
 ```
 Usage :
 Define wordpress host in the ansible inventory
-Needs the files backup-wp.conf and AES.key to be present in the same location
-These files has to be the same as the ones on the original WordPress server
+Needs the files backup-wp.conf and AES.key to be present in the same directory.
+
+These files have to be the same as the ones on the original WordPress server
 
 ansible-playbook wp_restore_after_clean_install.yml
 ```
@@ -94,6 +95,8 @@ Set VERBOSE=1 to have minimal logs display
 Set VERBOSE=2 to have full logs display
 
 Example for RETENTION = 7
+
+Explanation of the "Backup" backup-wp.py process :
 
 Init :
 
@@ -120,8 +123,22 @@ mv /data/backup/day-J-1 to /data/backup/dayJ-2
 mv /data/backup/day-J to /data/backup/dayJ-1
 mkdir /data/backup/dayJ
 ```
-2) copy new backup files in /data/backup/dayJ
+2) Make new backup files in /data/backup/dayJ
 
+3) Encrypt using AES 256
+
+4) Copy on the remote location using the same Rotation Strategy
+
+Explanation of the "Restore" restore-wp.py process :
+
+1) Retrieve backup files from remote location
+By default the script will retrieve files from  remote folder dayJ
+
+This value can be changed with the parameter "-d Number" to retrieve from remote folder "dayJ-Number"
+
+3) Decrypt using AES 256
+
+4) Import SQL backup  in MySQL and untar Site backup in WordPress Apache folder
 
 Example of config file content : /etc/backup-wp.conf
 ```
