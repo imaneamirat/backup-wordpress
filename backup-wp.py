@@ -11,6 +11,7 @@
 # and encrypted using a private AES-256 key
 # Needs privileges to access Wordpress site files and Wordpress database
 # and write access to backup local folders
+# ie to be executed as wordpress user
 #
 # Written by : Imane AMIRAT
 # Created date: Jul 24, 2021

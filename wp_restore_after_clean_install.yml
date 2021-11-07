@@ -1,0 +1,58 @@
+- name: restore wordpress from backup after post wordpress install
+  hosts: wordpress
+  become: yes
+
+  vars:
+    wordpress_user: wordpress
+    backup_dir: "/data/backup"
+
+  tasks:
+  - name: Copy restore scripts files
+    copy:
+      src: "{{ item }}"
+      dest: "/home/{{ wordpress_user }}/"
+      owner: '{{ wordpress_user }}'
+      group: '{{ wordpress_user }}'
+    with_items:
+    - create-key.py
+    - encrypt.py
+    - restore-wp.py
+    - tools.py
+    - requirements.txt
+
+  - name: Copy configuration files
+    copy:
+      src: "{{ item }}"
+      dest: "/etc/"
+      owner: '{{ wordpress_user }}'
+      group: '{{ wordpress_user }}'
+    with_items:
+    - AES.key
+    - backup-wp.conf
+
+  - name: install setuptools
+    apt:
+      name: python3-setuptools
+      state: present
+
+  - name: install pip
+    apt:
+      name: python3-pip
+      state: present
+
+  - name: Install Python requirements
+    pip:
+      requirements: "/home/{{ wordpress_user }}/requirements.txt"
+
+  - name: First ensure that backup dir exist
+    file:
+      path: {{ backup_dir }}
+      state: directory
+      owner: '{{ wordpress_user }}'
+      group: '{{ wordpress_user }}'
+      mode: 775
+
+  - name: Restore from last backup
+    become: yes
+    become_user: '{{ wordpress_user }}'
+    shell: "python3 /home/{{ wordpress_user }}/restore-wp.py"

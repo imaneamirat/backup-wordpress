@@ -112,6 +112,13 @@
      src: .my.cnf.j2
      dest: "/root/.my.cnf"
 
+  - name: Place ~/.my.cnf
+    template:
+     src: .my.cnf.j2
+     dest: "/home/{{ wordpress_user}}/.my.cnf"
+     owner: "{{ wordpress_user}}"
+     group: "{{ wordpress_user}}"
+
   - name: create WordPress Database
     mysql_db:
       name: "{{wordpress_database_name}}"
