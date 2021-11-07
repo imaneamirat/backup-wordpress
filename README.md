@@ -136,6 +136,8 @@ By default the script will retrieve files from  remote folder dayJ
 
 This value can be changed with the parameter "-d Number" to retrieve from remote folder "dayJ-Number"
 
+The backup files are copied locally in the folder /data/backup/RESTORE-DATE
+
 3) Decrypt using AES 256
 
 4) Import SQL backup  in MySQL and untar Site backup in WordPress Apache folder

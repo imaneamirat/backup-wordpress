@@ -67,6 +67,7 @@ parser = argparse.ArgumentParser()
 
 # add arguments to the parser
 parser.add_argument("-d","--day",type=int,default=0,help="index of day in the past to be restored. Possible value from 0 to BACKUP_RETENTION - 1")
+parser.add_argument("-l","--local",help="Restore from local backup folders only")
 parser.add_argument("-v","--verbose",type=int,default=0,choices=[0,1,2],help="0 disable verbose, 1 minimal verbose, 2 debug mode")
 
 # parse the arguments
@@ -74,6 +75,10 @@ args = parser.parse_args()
 
 DAYTORESTORE=args.day
 VERBOSE = args.verbose
+LOCALRESTORE = args.local
+
+if LOCALRESTORE:
+    BACKUP_DEST == 'LOCAL'
 
 if BACKUP_DEST == 'S3':
     S3_BUCKET = config.get('BACKUP','S3_BUCKET')
@@ -85,21 +90,30 @@ elif BACKUP_DEST == 'FTP':
     FTP_USER = config.get('BACKUP','FTP_USER')
     FTP_PASSWD = config.get('BACKUP','FTP_PASSWD')
     FTP_PATH = config.get('BACKUP','FTP_PATH')
+elif BACKUP_DEST == 'LOCAL':
+    pass
 else:
     print("Bad value in " + CONFIG_FILE + ". Value of BACKUP_DEST should be S3 or FTP only. Exiting")
     exit(1)
 
-# Getting current DateTime to create the separate backup folder like "20210921".
+if BACKUP_DEST == 'LOCAL':
+    if DAYTORESTORE:
+        TODAYRESTOREPATH = BACKUP_PATH + '/' + "DAYJ-" + DAYTORESTORE
+    else:
+        TODAYRESTOREPATH = BACKUP_PATH + '/' + "DAYJ"
 
-DATETIME = time.strftime('%Y%m%d')
-TODAYRESTOREPATH = BACKUP_PATH + '/' + "RESTORE-" +DATETIME
+else:
+    # Getting current DateTime to create the separate backup folder like "20210921".
+
+    DATETIME = time.strftime('%Y%m%d')
+    TODAYRESTOREPATH = BACKUP_PATH + '/' + "RESTORE-" +DATETIME
 
 
-# Checking if backup folder already exists or not. If not exists will create it.
-try:
-    os.stat(TODAYRESTOREPATH)
-except:
-    os.mkdir(TODAYRESTOREPATH)
+    # Checking if backup folder already exists or not. If not exists will create it.
+    try:
+        os.stat(TODAYRESTOREPATH)
+    except:
+        os.mkdir(TODAYRESTOREPATH)
 
 
 
@@ -151,7 +165,7 @@ if BACKUP_DEST == 'S3':
     print ("")
     print ("Download from AWS S3 completed")
 
-else:
+elif BACKUP_DEST == 'FTP':
     print ("")
     print ("Starting Download from FTP Server")
 
@@ -166,6 +180,7 @@ else:
 
     print ("")
     print ("Copy to FTP Server completed")
+
 
 # Part 2 : Decrypt files
 fdKey = open(ENCRYPTION_KEYPATH,'rb')
