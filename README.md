@@ -43,6 +43,7 @@ usage: restore-wp.py [-h] [-d DAY] [-v {0,1,2}]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -l, --local           Use local backup folders only
   -d DAY, --day DAY     index of day in the past to be restored. Possible value from 0 to BACKUP_RETENTION - 1
   -v {0,1,2}, --verbose {0,1,2}
                         0 disable verbose, 1 minimal verbose, 2 debug mode
