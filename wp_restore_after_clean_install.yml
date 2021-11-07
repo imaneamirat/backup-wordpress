@@ -7,16 +7,25 @@
     backup_dir: "/data/backup"
 
   tasks:
+  - name: Create admintools folder
+    file:
+      path: /opt/admintools
+      state: directory
+      owner: '{{ wordpress_user }}'
+      group: '{{ wordpress_user }}'
+      mode: 755
+
   - name: Copy restore scripts files
     copy:
       src: "{{ item }}"
-      dest: "/home/{{ wordpress_user }}/"
+      dest: "/opt/admintools/"
       owner: '{{ wordpress_user }}'
       group: '{{ wordpress_user }}'
     with_items:
     - create-key.py
     - encrypt.py
     - restore-wp.py
+    - backup-wp.py
     - tools.py
     - requirements.txt
 
@@ -42,7 +51,7 @@
 
   - name: Install Python requirements
     pip:
-      requirements: "/home/{{ wordpress_user }}/requirements.txt"
+      requirements: "/opt/admintools/requirements.txt"
 
   - name: First ensure that backup dir exist
     file:
@@ -55,4 +64,4 @@
   - name: Restore from last backup
     become: yes
     become_user: '{{ wordpress_user }}'
-    shell: "python3 /home/{{ wordpress_user }}/restore-wp.py"
+    shell: "python3 /opt/admintools/restore-wp.py"
