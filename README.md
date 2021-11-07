@@ -1,12 +1,12 @@
 Set of scripts to make backup and restore of a complete Wordpress server
 
-Composed of 
+Composed of
 
-- backup-wp.py : 
+- backup-wp.py :
 
 Scripts to backup WordPress data to either FTP server or AWS S3 depending on the configuration parameters.
 
-It will make backup of wordpress MySQL database and wordpress Apache folder  
+It will make backup of wordpress MySQL database and wordpress Apache folder
 
 Backup process follow a Backup Folder Rotation Strategy using RETENTION parameter
 
@@ -29,7 +29,7 @@ optional arguments:
 - restore-wp.py :
 Scripts to restore WordPress data to either FTP server or AWS S3 depending on the configuration parameters
 
-It will first copy MySQL database backups and Wordpress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the wordpress website location 
+It will first copy MySQL database backups and Wordpress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the wordpress website location
 
 By Default, this script will read configuration from file /etc/backup-wp.conf
 
@@ -62,14 +62,27 @@ optional arguments:
 - encrypt.py
 Set of functions used for encrypt en decrypt using AES-256
 
-- wp_make_clean_install.py
-Ansible playbook to install a complete Wordpress server on a fresh new Debian 11 server
-ie install Apache2 + PHP7 + MySQL-server 5.7 + Wordpress
+- wp_make_clean_install.yml
+Ansible playbook to install a complete WordPress server on a fresh new Debian 11 server
+ie install Apache2 + PHP7 + MySQL-server 5.7 + WordPress
+
 ```
 Usage :
 Define wordpress host in the ansible inventory
 
-ansible-playbook wp_make_clean_install.py
+ansible-playbook wp_make_clean_install.yml
+```
+
+- wp_restore_after_clean_install.yml
+Ansible playbook to restore a WordPress backup on a clean WordPress install
+
+```
+Usage :
+Define wordpress host in the ansible inventory
+Needs the files backup-wp.conf and AES.key to be present in the same location
+These files has to be the same as the ones on the original WordPress server
+
+ansible-playbook wp_restore_after_clean_install.yml
 ```
 
 Verbose mode :
@@ -98,7 +111,7 @@ Before each new daily backup  :
 
 1) Rotation :
 ```
-rmdir /data/backup/day-J-6 
+rmdir /data/backup/day-J-6
 mv /data/backup/day-J-5 to /data/backup/dayJ-6
 mv /data/backup/day-J-4 to /data/backup/dayJ-5
 mv /data/backup/day-J-3 to /data/backup/dayJ-4
