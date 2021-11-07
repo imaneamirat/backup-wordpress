@@ -65,3 +65,10 @@
     become: yes
     become_user: '{{ wordpress_user }}'
     shell: "python3 /opt/admintools/restore-wp.py"
+
+  - name: Create crontab for backup
+    cron:
+      minute: "21"
+      hour: "3"
+      user: '{{ wordpress_user }}'
+      job: "python3 /opt/admintools/backup-wp.py"
