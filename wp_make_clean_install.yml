@@ -9,10 +9,7 @@
     mysql_socket: '/run/mysqld/mysqld.sock'
     wordpress_user: wordpress
   roles:
-    - mysql
     - apache
     - php
     - wordpress
-
-
-
+    - mysql

@@ -29,7 +29,7 @@
       path: "/root/.my.cnf"
     register: my_cnf_status
 
-  # This command will exit non-zero when the root password was set previously
+  # This command will exit non-zero when the root password was unset previously
   - name: Check if root password is unset
     shell: >
       mysql -u root
@@ -97,10 +97,21 @@
     when: root_pwd_check.rc != 0
     tags: mysql
 
-  - name: Place ~/.my.cnf
+  - name: Place ~/.my.cnf for root user
     template:
      src: .my.cnf.j2
      dest: "/root/.my.cnf"
+
+  - name: Set directory path
+    set_fact:
+      path: "{{wp_install_path}}/{{wp_directory_name}}"
+
+  - name: Place ~/.my.cnf for wordpress user
+    template:
+      src: .my.cnf.wordpress.j2
+      dest: "{{ path }}/.my.cnf"
+      owner: "{{ wordpress_user }}"
+      group: "{{ wordpress_user }}"
 
   - name: create WordPress Database
     mysql_db:
@@ -108,7 +119,7 @@
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
 
-  - name: Grant all previliges
+  - name: Grant all previliges to wordpress user
     mysql_user:
       name: "{{mysql_wordpress_username}}"
       password: "{{ mysql_wordpress_password }}"
