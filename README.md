@@ -1,7 +1,7 @@
 # Description of the project
 Set of scripts to make backup and restore of a complete WordPress server
 
-##Composition
+## Composition
 
 - backup-wp.py :
 
@@ -97,9 +97,9 @@ Set VERBOSE=2 to have full logs display
 
 Example for RETENTION = 7
 
-#Explanation of the "Backup" backup-wp.py process :
+# Explanation of the "Backup" backup-wp.py process :
 
-##Init : First time execution of the backup process
+## Init : First time execution of the backup process
 
 Create the following folders :
 ```
@@ -111,7 +111,7 @@ Create the following folders :
 /data/backup/dayJ-5
 /data/backup/dayJ-6
 ```
-##Before each new daily backup: Rotation :
+## Before each new daily backup: Rotation :
 ```
 rmdir /data/backup/day-J-6
 mv /data/backup/day-J-5 to /data/backup/dayJ-6
@@ -142,7 +142,7 @@ The backup files are copied locally in the folder /data/backup/RESTORE-DATE
 3. Import SQL backup  in MySQL and untar Site backup in WordPress Apache folder
 
 # Configuration files :
-##Example of config file content : /etc/backup-wp.conf
+## Example of config file content : /etc/backup-wp.conf
 ```
 [WP]
 WP_PATH=/var/www/html
@@ -184,7 +184,7 @@ FTP_PASSWD=1edd!ai3$
 FTP_PATH=backup-wp
 ```
 
-##Example of content for the file .my.cnf that needs to be present in your Wordpress user's HOME directory :
+## Example of content for the file .my.cnf that needs to be present in your Wordpress user's HOME directory :
 
 ```
 [client]
