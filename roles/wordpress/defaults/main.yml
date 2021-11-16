@@ -1,5 +1,5 @@
 ---
-# defaults file for wordpress
+# defaults vars for wordpress
 wp_install_path : '/var/www/html'
 wp_directory_name: 'wordpress'
 

@@ -70,30 +70,21 @@ optional arguments:
 
 Set of functions used for encrypt en decrypt using AES-256
 
-- wp_make_clean_install.yml
+- wp_make_clean_install_and_restore_from_backup.yml
 
 Ansible playbook to install a complete WordPress server on a fresh new Debian 11 server
-ie install Apache2 + PHP7 + MySQL-server 5.7 + WordPress
+
+ie install Apache2 + PHP7 + MySQL-server 5.7  then restore WordPress Site and Database dump from backup
 
 ```
 Usage :
 Define wordpress host in the ansible inventory
 
-ansible-playbook wp_make_clean_install.yml
-```
-
-- wp_restore_after_clean_install.yml
-
-Ansible playbook to restore a WordPress backup on a clean WordPress install
-
-```
-Usage :
-Define wordpress host in the ansible inventory
 Needs the files backup-wp.conf and AES.key to be present in the same directory.
 
 These files have to be the same as the ones on the original WordPress server
 
-ansible-playbook wp_restore_after_clean_install.yml
+ansible-playbook wp_make_clean_install_and_restore_from_backup.yml
 ```
 
 ## Verbose mode :
