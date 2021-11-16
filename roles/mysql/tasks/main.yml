@@ -16,11 +16,10 @@
     notify:
       - restart-mysql
 
-   #we could move this to a handler
-  - name: ensure MySQL always starts
+  - name: ensure MySQL is started and enabled at reboot
     service:
       name: "{{ mysql_service_name }}"
-      state: restarted
+      state: started
       enabled: yes
 
 
@@ -101,6 +100,7 @@
     template:
      src: .my.cnf.j2
      dest: "/root/.my.cnf"
+    when: not my_cnf_status.stat.exist
 
   - name: Set directory path
     set_fact:

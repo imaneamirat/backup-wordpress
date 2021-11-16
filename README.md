@@ -1,6 +1,7 @@
+# Description of the project
 Set of scripts to make backup and restore of a complete WordPress server
 
-Composed of
+##Composition
 
 - backup-wp.py :
 
@@ -12,7 +13,9 @@ Backup process follows a Backup Folder Rotation Strategy using RETENTION paramet
 
 By Default, this script will read configuration from file /etc/backup-wp.conf
 
-Todo : Add the option -f to read parameters from a specified filename in the command line parameter
+Todo :
+
+Add the option -f to read parameters from a specified filename in the command line parameter
 
 Needs Python 3
 
@@ -27,6 +30,7 @@ optional arguments:
 
 ```
 - restore-wp.py :
+
 Scripts to restore WordPress data to either FTP server or AWS S3 depending on the configuration parameters
 
 It will first copy MySQL database backups and WordPress site archive from either FTP server or AWS S3 depending on the configuration parameters to a local restore repository then import the SQL backup and untar the site archive to the WordPress website location
@@ -49,9 +53,11 @@ optional arguments:
                         0 disable verbose, 1 minimal verbose, 2 debug mode
 ```
 - tools.py
+
 Set of functions used by both backup and restore scripts
 
 - create-key.py
+
 Script to create a 256 bits key used for encryption
 ```
 usage: create-key.py [-h] [--path PATH]
@@ -61,9 +67,11 @@ optional arguments:
   --path PATH
 ```
 - encrypt.py
+
 Set of functions used for encrypt en decrypt using AES-256
 
 - wp_make_clean_install.yml
+
 Ansible playbook to install a complete WordPress server on a fresh new Debian 11 server
 ie install Apache2 + PHP7 + MySQL-server 5.7 + WordPress
 
@@ -75,6 +83,7 @@ ansible-playbook wp_make_clean_install.yml
 ```
 
 - wp_restore_after_clean_install.yml
+
 Ansible playbook to restore a WordPress backup on a clean WordPress install
 
 ```
@@ -87,7 +96,7 @@ These files have to be the same as the ones on the original WordPress server
 ansible-playbook wp_restore_after_clean_install.yml
 ```
 
-Verbose mode :
+## Verbose mode :
 
 Set VERBOSE=0 to disable logs display
 
@@ -97,9 +106,9 @@ Set VERBOSE=2 to have full logs display
 
 Example for RETENTION = 7
 
-Explanation of the "Backup" backup-wp.py process :
+#Explanation of the "Backup" backup-wp.py process :
 
-Init :
+##Init : First time execution of the backup process
 
 Create the following folders :
 ```
@@ -111,9 +120,7 @@ Create the following folders :
 /data/backup/dayJ-5
 /data/backup/dayJ-6
 ```
-Before each new daily backup  :
-
-1) Rotation :
+##Before each new daily backup: Rotation :
 ```
 rmdir /data/backup/day-J-6
 mv /data/backup/day-J-5 to /data/backup/dayJ-6
@@ -124,26 +131,27 @@ mv /data/backup/day-J-1 to /data/backup/dayJ-2
 mv /data/backup/day-J to /data/backup/dayJ-1
 mkdir /data/backup/dayJ
 ```
-2) Make new backup files in /data/backup/dayJ
+## Backup process itself :
+1. Make new backup files in /data/backup/dayJ
 
-3) Encrypt using AES 256
+2. Encrypt using AES 256
 
-4) Copy on the remote location using the same Rotation Strategy
+3. Copy on the remote location using the same Rotation Strategy
 
-Explanation of the "Restore" restore-wp.py process :
-
-1) Retrieve backup files from remote location
+# Explanation of the "Restore" restore-wp.py process :
+1. Retrieve backup files from remote location
 By default the script will retrieve files from  remote folder dayJ
 
 This value can be changed with the parameter "-d Number" to retrieve from remote folder "dayJ-Number"
 
 The backup files are copied locally in the folder /data/backup/RESTORE-DATE
 
-3) Decrypt using AES 256
+2. Decrypt using AES 256
 
-4) Import SQL backup  in MySQL and untar Site backup in WordPress Apache folder
+3. Import SQL backup  in MySQL and untar Site backup in WordPress Apache folder
 
-Example of config file content : /etc/backup-wp.conf
+# Configuration files :
+##Example of config file content : /etc/backup-wp.conf
 ```
 [WP]
 WP_PATH=/var/www/html
@@ -165,6 +173,16 @@ S3_DEFAULT_REGION=eu-west-3
 ```
 Or
 ```
+[WP]
+WP_PATH=/var/www/html
+[DB]
+DB_HOST=localhost
+DB_NAME=wordpress
+[SMTP]
+SMTP_HOST=localhost
+SMTP_FROM=address@example.com
+SMTP_TO=address@recipient.com
+
 [BACKUP]
 LOCALBKPATH=/data/backup
 BACKUP_RETENTION=7
@@ -175,9 +193,8 @@ FTP_PASSWD=1edd!ai3$
 FTP_PATH=backup-wp
 ```
 
-Create the file .my.cnf in your HOME directory :
+##Example of content for the file .my.cnf that needs to be present in your Wordpress user's HOME directory :
 
-Content of .my.cnf :
 ```
 [client]
 host=localhost
