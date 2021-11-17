@@ -65,6 +65,7 @@
 
 - name: Create crontab for backup
   cron:
+    name: "daily backup"
     minute: "21"
     hour: "3"
     user: '{{ wordpress_user }}'

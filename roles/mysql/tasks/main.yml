@@ -27,27 +27,6 @@
       path: "/root/.my.cnf"
     register: my_cnf_status
 
-  # This command will exit non-zero when the root password was set previously
-  - name: Check if root password is unset
-    shell: >
-      mysql -u root
-      -h localhost
-      -S {{ mysql_socket }}
-      -e "quit"
-    changed_when: false
-    ignore_errors: true
-    register: root_pwd_check
-    tags: mysql
-
-  # Repeat runs with the same password can continue idempotently, otherwise fail.
-  - name: Check if the specified root password is already set
-    shell: >
-      mysqladmin -u root -p{{ mysql_root_password }} status
-    changed_when: false
-    no_log: true
-    when: root_pwd_check.rc != 0
-    tags: mysql
-
   - name: Set MySQL root password for the first time (root@localhost)
     mysql_user:
       name: root
@@ -55,8 +34,6 @@
       host: localhost
       login_unix_socket: "{{ mysql_socket }}"
       state: present
-    when: root_pwd_check.rc != 0
-    tags: mysql
 
   - name: Set MySQL root password for 127.0.0.1, ::1, FQDN
     mysql_user:
@@ -71,8 +48,6 @@
       - ::1
       - 127.0.0.1
       - "{{ ansible_fqdn }}"
-    when: root_pwd_check.rc != 0
-    tags: mysql
 
   - name: Place ~/.my.cnf for root user
     template:
