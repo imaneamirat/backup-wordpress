@@ -87,6 +87,20 @@ These files have to be the same as the ones on the original WordPress server
 ansible-playbook wp_make_clean_install_and_restore_from_backup.yml
 ```
 
+
+- wp_copy_backup_scripts.yml
+
+Ansible playbook to install backup and restore scripts with all the required dependencies
+
+```
+Usage :
+Define wordpress host in the ansible inventory
+
+Needs the files backup-wp.conf and AES.key to be present in the same directory.
+
+If AES.key is not already created you can create a new AES.key file by using the python file create_key.py
+```
+
 ## Verbose mode :
 
 Set VERBOSE=0 to disable logs display
