@@ -4,7 +4,7 @@
     state: directory
     owner: '{{ wordpress_user }}'
     group: '{{ wordpress_user }}'
-    mode: 755
+    mode: '755'
 
 - name: Copy restore scripts files
   copy:
@@ -50,11 +50,12 @@
     state: directory
     owner: '{{ wordpress_user }}'
     group: '{{ wordpress_user }}'
-    mode: 775
+    mode: '775'
 
 - name: Restore from last backup
   become: yes
   become_user: '{{ wordpress_user }}'
+  chdir: "/opt/admintools"
   shell: "python3 /opt/admintools/restore-wp.py"
   notify:
   - restart apache
