@@ -21,6 +21,6 @@
     when: ansible_distribution == 'Debian'
 
   - name: Install php
-    apt: name={{ php_extension }} state=present
+    apt: name={{ php_extensions }} state=present
     notify: reload apache
 
