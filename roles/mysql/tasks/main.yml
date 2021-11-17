@@ -100,7 +100,7 @@
     template:
      src: .my.cnf.j2
      dest: "/root/.my.cnf"
-    when: not my_cnf_status.stat.exist
+    when: not my_cnf_status.stat.exists
 
   - name: Set directory path
     set_fact:
