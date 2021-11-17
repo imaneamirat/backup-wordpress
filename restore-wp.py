@@ -211,7 +211,7 @@ wp_archive= TODAYRESTOREPATH + "/" + "wordpress.site.tar.gz"
 
 #open file in read mode
 tar = tarfile.open(wp_archive,"r:gz")
-tar.extractall(WP_PATH)
+tar.extractall("/")
 tar.close()
 
 print ("")
