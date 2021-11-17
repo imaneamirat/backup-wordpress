@@ -1,7 +1,7 @@
 ---
   - name: Include OS-specific variables.
     include_vars: "Debian.yml"
-  
+
   - name: Ensure required packages to add Ondřej Surý's PHP repository
     apt:
       pkg:
@@ -21,7 +21,6 @@
     when: ansible_distribution == 'Debian'
 
   - name: Install php
-    apt: name={{item}} state=present
+    apt: name={{ php_extension }} state=present
     notify: reload apache
-    with_items:
-     "{{ php_extensions }}"
+

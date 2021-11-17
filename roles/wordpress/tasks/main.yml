@@ -10,14 +10,6 @@
 
 - name: wordpress folder and user creation
   block:
-    - name: check installation path exists
-      file:
-        path: {{path}}
-        state: directory
-        owner: '{{ wordpress_user }}'
-        group: '{{ wordpress_user }}'
-        mode: '775'
-
     - name: create group wordpress
       group:
         name: '{{ wordpress_user }}'
@@ -35,6 +27,14 @@
         name: 'www-data'
         groups: '{{ wordpress_user }}'
         append: yes
+
+    - name: check installation path exists
+      file:
+        path: "{{path}}"
+        state: directory
+        owner: '{{ wordpress_user }}'
+        group: '{{ wordpress_user }}'
+        mode: '775'
 
   when: stat_result.stat.exists == False
 
