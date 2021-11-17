@@ -55,8 +55,9 @@
 - name: Restore from last backup
   become: yes
   become_user: '{{ wordpress_user }}'
-  chdir: "/opt/admintools"
-  shell: "python3 /opt/admintools/restore-wp.py"
+  shell:
+    cmd: "python3 /opt/admintools/restore-wp.py"
+    chdir: "/opt/admintools"
   notify:
   - restart apache
 
