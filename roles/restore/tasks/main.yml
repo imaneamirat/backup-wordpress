@@ -46,7 +46,7 @@
 
 - name: First ensure that backup dir exist
   file:
-    path: {{ backup_dir }}
+    path: "{{ backup_dir }}"
     state: directory
     owner: '{{ wordpress_user }}'
     group: '{{ wordpress_user }}'
