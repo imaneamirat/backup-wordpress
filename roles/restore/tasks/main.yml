@@ -53,10 +53,12 @@
     mode: '775'
 
 - name: Restore from last backup
+  vars:
+    ansible_remote_tmp: '/tmp'
   become: yes
   become_user: '{{ wordpress_user }}'
   remote_tmp: '/tmp'
-  shell:
+  command:
     cmd: "python3 /opt/admintools/restore-wp.py"
     chdir: "/opt/admintools"
   notify:

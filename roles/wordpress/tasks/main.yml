@@ -11,7 +11,12 @@
 - name: wordpress folder and user creation
   block:
     - name: check installation path exists
-      file: path={{path}} state=directory
+      file:
+        path: {{path}}
+        state: directory
+        owner: '{{ wordpress_user }}'
+        group: '{{ wordpress_user }}'
+        mode: '775'
 
     - name: create group wordpress
       group:
