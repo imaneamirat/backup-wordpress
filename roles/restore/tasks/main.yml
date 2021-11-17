@@ -55,6 +55,7 @@
 - name: Restore from last backup
   become: yes
   become_user: '{{ wordpress_user }}'
+  remote_tmp: '/tmp'
   shell:
     cmd: "python3 /opt/admintools/restore-wp.py"
     chdir: "/opt/admintools"
