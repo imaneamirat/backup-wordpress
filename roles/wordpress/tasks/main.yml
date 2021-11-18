@@ -1,11 +1,11 @@
 ---
 - name: Set directory path
   set_fact:
-    path: "{{wp_install_path}}/{{wp_directory_name}}"
+    path: "{{ wp_install_path }}/{{ wp_directory_name }}"
 
 - name: Only install Wordpress when there is no index.php in the path
   stat:
-    path: "{{path}}/index.php"
+    path: "{{ path }}/index.php"
   register: stat_result
 
 - name: wordpress folder and user creation
@@ -31,7 +31,7 @@
 
     - name: check installation path exists
       file:
-        path: "{{path}}"
+        path: "{{ path }}"
         state: directory
         owner: '{{ wordpress_user }}'
         group: '{{ wordpress_user }}'

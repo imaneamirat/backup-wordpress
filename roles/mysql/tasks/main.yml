@@ -57,7 +57,7 @@
 
   - name: Set directory path
     set_fact:
-      path: "{{wp_install_path}}/{{wp_directory_name}}"
+      path: "{{ wp_install_path }}/{{ wp_directory_name }}"
 
   - name: Place ~/.my.cnf for wordpress user
     template:
@@ -68,15 +68,15 @@
 
   - name: create WordPress Database
     mysql_db:
-      name: "{{wordpress_database_name}}"
+      name: "{{ wordpress_database_name }}"
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
 
   - name: Grant all previliges to wordpress user
     mysql_user:
-      name: "{{mysql_wordpress_username}}"
+      name: "{{ mysql_wordpress_username }}"
       password: "{{ mysql_wordpress_password }}"
-      priv: '*.*:ALL'
+      priv: '{{ wordpress_database_name }}.*:ALL'
       host: 'localhost'
       state: present
       login_unix_socket: /run/mysqld/mysqld.sock
