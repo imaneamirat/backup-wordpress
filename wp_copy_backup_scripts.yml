@@ -1,5 +1,8 @@
 ---
 - hosts: wordpress
+  become: yes
+  vars:
+    wordpress_user: wordpress
   tasks:
   - name: Create admintools folder
     file:
