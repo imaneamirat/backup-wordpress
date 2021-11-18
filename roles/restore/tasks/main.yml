@@ -1,6 +1,6 @@
 - name: Create admintools folder
   file:
-    path: /opt/admintools
+    path: /opt/admintools/backup-wordpress
     state: directory
     owner: '{{ wordpress_user }}'
     group: '{{ wordpress_user }}'
@@ -9,7 +9,7 @@
 - name: Copy restore scripts files
   copy:
     src: "{{ item }}"
-    dest: "/opt/admintools/"
+    dest: "/opt/admintools/backup-wordpress"
     owner: '{{ wordpress_user }}'
     group: '{{ wordpress_user }}'
   with_items:
@@ -42,7 +42,7 @@
 
 - name: Install Python requirements
   pip:
-    requirements: "/opt/admintools/requirements.txt"
+    requirements: "/opt/admintools/backup-wordpress/requirements.txt"
 
 - name: First ensure that backup dir exist
   file:
@@ -58,8 +58,8 @@
   become: yes
   become_user: '{{ wordpress_user }}'
   command:
-    cmd: "python3 /opt/admintools/restore-wp.py"
-    chdir: "/opt/admintools"
+    cmd: "python3 /opt/admintools/backup-wordpress/restore-wp.py"
+    chdir: "/opt/admintools/backup-wordpress"
   notify:
   - restart apache
 
@@ -69,4 +69,4 @@
     minute: "20"
     hour: "3"
     user: '{{ wordpress_user }}'
-    job: "python3 /opt/admintools/backup-wp.py"
+    job: "python3 /opt/admintools/backup-wordpress/backup-wp.py"
