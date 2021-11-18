@@ -3,6 +3,7 @@
   become: yes
   vars:
     wordpress_user: wordpress
+    backup_dir: "/data/backup"
   tasks:
   - name: Create admintools folder
     file:
