@@ -169,8 +169,12 @@ elif BACKUP_DEST == 'FTP':
     print ("")
     print ("Starting Download from FTP Server")
 
+    if DAYTORESTORE == 0:
+        RESTORE_FOLDER = "DAYJ"
+    else:
+        RESTORE_FOLDER = "DAYJ-" + str(DAYTORESTORE)
     ftpserver=tools.connectftp(FTP_SERVER,FTP_USER,FTP_PASSWD)
-    ftpserver.cwd(FTP_PATH)
+    ftpserver.cwd(FTP_PATH + "/" + RESTORE_FOLDER)
 
     for file in [MysqlBackupFilename,WordPressBackupFilename]:
         print("Transfering" + file)

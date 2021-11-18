@@ -75,6 +75,18 @@ def uploadftp(ftp, ficdsk,ftpPath):
     with open(ficdsk, "rb") as f:
         ftp.storbinary("STOR " + ficftp, f)
 
+def downloadftp(ftp, ficftp, repdsk='.', ficdsk=None):
+    """Download the file ficftp from ftpserver and put it in the local folder repdsk
+       - ftp: object 'ftplib.FTP' from an open session
+       - ficftp: name of the file to download
+       - repdsk: local folder where you want to store the file
+       - ficdsk: optional, if you want to rename the file locally
+    """
+    if ficdsk==None:
+        ficdsk=ficftp
+    with open(os.path.join(repdsk, ficdsk), 'wb') as f:
+        ftp.retrbinary('RETR ' + ficftp, f.write)
+
 def closeftp(ftp):
     """Close FTP connection
        - ftp: variable 'ftplib.FTP' on open connection

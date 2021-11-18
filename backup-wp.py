@@ -421,17 +421,30 @@ else:
             FTP_PATH = "DAYJ"
         else:
             FTP_PATH = "DAYJ-" + str(index)
-        if VERBOSE == 2:
-            print("Create folder " + FTP_PATH)
+
+        # First check if FTP_PATH already exists
         try:
-            ftpserver.mkd(FTP_PATH)
+            ftpserver.cwd(FTP_PATH)
         except:
             if VERBOSE == 2:
-                print("Error during Create folder of " + BACKUP_PATH + " ie Folder already exist")
-            MESSAGE="""Backup failed
-            Error during create folder of """ + FTP_PATH + " ie Folder already exist"
-            tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
-            exit(1)
+                print(FTP_PATH + " does not exists already")
+                print("Create folder " + FTP_PATH)
+            try:
+                ftpserver.mkd(FTP_PATH)
+            except:
+                if VERBOSE == 2:
+                    print("Error during Create folder of " + BACKUP_PATH + " ie Folder already exist")
+                MESSAGE="""Backup failed
+                Error during create folder of """ + FTP_PATH + " ie Folder already exist"
+                tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
+                exit(1)
+            else:
+                if VERBOSE == 2:
+                    print(FTP_PATH + " created successfuly")
+        else:
+            if VERBOSE == 2:
+                print(FTP_PATH + " already exists")
+            ftpserver.cwd("..")
 
     if BACKUP_ROTATION == True:
         # Backup Rotation
