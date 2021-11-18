@@ -6,4 +6,5 @@
     copy: src=vsftpd.conf dest=/etc/vsftpd.conf
 
   - name: Create chroot_list
-    template: src=vsftpd_chroot_list.j2 dest=/etc/vsftpd_chroot_list
+    template: src=vsftpd.chroot_list.j2 dest=/etc/vsftpd.chroot_list
+    notify: restart vsftpd
