@@ -19,6 +19,7 @@
         name: '{{ wordpress_user }}'
         shell: /bin/bash
         group: '{{ wordpress_user }}'
+        password: '{{ wordpress_password }}'
         home: "{{ path }}"
         create_home: no
 
