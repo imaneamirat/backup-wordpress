@@ -45,7 +45,6 @@ from botocore.config import Config
 
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-# Todo : File integrity check
 '''
 Init :
 
@@ -172,10 +171,9 @@ else:
         # Local Backup Rotation
         BACKUP_ROTATION = True
         if VERBOSE == 2:
-                print("")
-                print("Local backup folders rotation")
-                print("")
-
+            print("")
+            print("Local backup folders rotation")
+            print("")
         # Delete DAYJ-RETENTION-1 folder
         BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ-" + str(int(BACKUP_RETENTION)-1)
         try:
@@ -189,7 +187,6 @@ else:
             Error during delete of """ + BACKUP_PATH
             tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress", smtphost=SMTP_HOST)
             exit(1)
-
         # Move content of DAYJ-N to DAYJ-(N+1)
         for index in range(int(BACKUP_RETENTION)-2,-1,-1):
             if index == 0:
@@ -200,7 +197,6 @@ else:
                 BACKUP_PATH_TO = BACKUP_ROOT_PATH + "/DAYJ-" + str(index+1)
             if VERBOSE == 2:
                 print("Rename from " + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO)
-
             try:
                 os.rename(BACKUP_PATH_FROM,BACKUP_PATH_TO)
             except:
@@ -210,7 +206,6 @@ else:
                     Error during rename of """ + BACKUP_PATH_FROM + " to " + BACKUP_PATH_TO
                     tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
                     exit(1)
-
         # Create DAYJ folder
         BACKUP_PATH = BACKUP_ROOT_PATH + "/DAYJ"
         if VERBOSE == 2:
@@ -224,7 +219,7 @@ if VERBOSE >=1 :
     print ("")
     print ("Starting Backup of MySQL")
 
-dumpcmd = "mysqldump -h " + DB_HOST + " " + DB_NAME + " > " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
+dumpcmd = "mysqldump -h " + DB_HOST + " " + DB_NAME + " > " + BACKUP_PATH + "/" + DB_NAME + ".sql"
 try:
     os.system(dumpcmd)
 except:
@@ -235,7 +230,7 @@ except:
     tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
     exit(1)
 
-gzipcmd = "gzip -f " + pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql"
+gzipcmd = "gzip -f " + BACKUP_PATH + "/" + DB_NAME + ".sql"
 try:
     os.system(gzipcmd)
 except:
@@ -245,7 +240,7 @@ except:
     Error during Gzip of mysqldump"""
     tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
     exit(1)
-localMysqlBackup=pipes.quote(BACKUP_PATH) + "/" + DB_NAME + ".sql.gz"
+localMysqlBackup=BACKUP_PATH + "/" + DB_NAME + ".sql.gz"
 
 if VERBOSE == 2:
         print("Local MySQL dump copied in " + localMysqlBackup )
@@ -428,7 +423,6 @@ else:
             FTP_PATH = "DAYJ-" + str(index)
         if VERBOSE == 2:
             print("Create folder " + FTP_PATH)
-
         try:
             ftpserver.mkd(FTP_PATH)
         except:
@@ -483,10 +477,8 @@ else:
                 Error during delete of folder """ + FTP_PATH + " ie Folder not empty"
                 tools.sendmail(mailfrom=SMTP_FROM,mailto=SMTP_TO,message=MESSAGE,subject="Backup of Wordpress of " + TODAY, smtphost=SMTP_HOST)
                 exit(1)
-
         if VERBOSE == 2:
             print("")
-
         # Move content of DAYJ-N to DAYJ-(N+1)
         for index in range(int(BACKUP_RETENTION)-2,-1,-1):
             if index == 0:
@@ -498,7 +490,6 @@ else:
             if VERBOSE == 2:
                 print("Rename from " + FTP_PATH_FROM + " to " + FTP_PATH_TO)
             ftpserver.rename(FTP_PATH_FROM,FTP_PATH_TO)
-
         # Create DAYJ folder
         FTP_PATH="DAYJ"
         if VERBOSE == 2:
@@ -507,6 +498,7 @@ else:
                 print("")
         ftpserver.mkd(FTP_PATH)
 
+    FTP_PATH="DAYJ"
     for file in [localMysqlBackup + ".bin",wp_archive + ".bin",DATEFILE + ".bin"]:
         if VERBOSE >= 1:
             print("Transfering " + file + " to " + FTP_PATH)
