@@ -57,10 +57,11 @@ def connectftp(ftpserver = "172.16.30.32" , username = 'anonymous', password = '
        - passive: activate or disable ftp passive mode (False par défaut)
        return the object 'ftplib.FTP' after connection and opening of a session
     """
-    ftp = ftplib.FTP()
+    ftp = ftplib.FTP_TLS()
     ftp.connect(ftpserver)
     ftp.login(username, password)
     ftp.set_pasv(passive)
+    ftp.prot_p()
     return ftp
 
 def uploadftp(ftp, ficdsk,ftpPath):
