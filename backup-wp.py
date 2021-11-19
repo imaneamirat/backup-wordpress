@@ -72,7 +72,13 @@ mv /data/backup/day-J-1 to /data/backup/dayJ-2
 mv /data/backup/day-J to /data/backup/dayJ-1
 mkdir /data/backup/dayJ
 
-2) copy new backup files in /data/backup/dayJ
+2) Copy new backup files in local folder /data/backup/dayJ
+
+3) Encrypt files
+
+4) Remote folders rotation ie FTP or S3
+
+4) Copy files to remote location ie FTP or S3
 '''
 # create parser
 parser = argparse.ArgumentParser()

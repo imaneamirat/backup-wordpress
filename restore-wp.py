@@ -42,7 +42,12 @@ from botocore.config import Config
 # By Default, this script will read configuration from file /etc/backup-wp.conf
 #
 # Todo : Add the option -f to read parameters from a specified filename in the command line parameter
-
+'''
+1) Copy files from remote location ie FTP or S3 to /data/backup/RESTORE-DATE
+2) Decrypt files
+3) Import SQL backup in MySQL
+4) Untar Site backup
+'''
 CONFIG_FILE = "/etc/backup-wp.conf"
 
 config = configparser.ConfigParser()
